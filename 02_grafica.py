@@ -111,7 +111,7 @@ ax.set_ylabel('Latitud')
 ax.set_title('Time of Emergence - Umbral alto (%s, %s)' % (var.upper(), tri.upper()))
 plt.tight_layout()
 plt.savefig('out/TOE_%s_%s_umbral_alto.png' % (var, tri), dpi=100, bbox_inches='tight')
-plt.show()
+plt.close()
 
 # --- Mapa umbral bajo (TOE_1: +1°C para tas, -1 para pr) ---
 fig, ax = plt.subplots(figsize=(10, 8))
@@ -127,7 +127,7 @@ ax.set_ylabel('Latitud')
 ax.set_title('Time of Emergence - Umbral bajo (%s, %s)' % (var.upper(), tri.upper()))
 plt.tight_layout()
 plt.savefig('out/TOE_%s_%s_umbral_bajo.png' % (var, tri), dpi=100, bbox_inches='tight')
-plt.show()
+plt.close()
 
 # PARTE 4: DECOMPOSICION DE INCERTIDUMBRE PARA PERU #########################
 # Calcula la fraccion porcentual de cada componente de incertidumbre
@@ -172,4 +172,4 @@ ax.set_ylim(0, 100)
 
 plt.savefig('out/Fraccion_incertidumbre_peru_%s_%s_interpol.png' % (var, tri),
             dpi=100, bbox_inches='tight')
-plt.show()
+plt.close()

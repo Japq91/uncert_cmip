@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # =============================================================================
-# Script: run_toe.sh
+# Script: 00_procesa.sh
 # Ejecuta el flujo completo de analisis TOE:
 #   1. 01_uncertainty.py  -> Calcula incertidumbres y TOE
 #   2. 02_grafica.py     -> Genera mapas y graficos

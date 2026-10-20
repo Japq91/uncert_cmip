@@ -1,3 +1,9 @@
+# ============================
+# DIRECTORIOS (modificar aqui si es necesario)
+idir = 'data'   # Directorio de entrada (contiene subcarpetas por trimestre: data/<tri>/)
+odir = 'out'    # Directorio de salida
+# ============================
+
 import pandas as pd
 import xarray as xr
 from glob import glob as gb
@@ -45,14 +51,13 @@ def polinom(d, var):
 
 # VERIFICACION DE ARCHIVOS EXISTENTES #########################
 # Si los 4 archivos de salida ya existen, se omite el calculo
-out_dir = 'out'
-os.makedirs(out_dir, exist_ok=True)
+os.makedirs(odir, exist_ok=True)
 
 archivos_salida = [
-    'out/toe_%s_%s.nc' % (var, per),
-    'out/Tmu_%s_%s.nc' % (var, per),
-    'out/Tsu_%s_%s.nc' % (var, per),
-    'out/Tvi_%s_%s.nc' % (var, per)
+    os.path.join(odir, 'toe_%s_%s.nc' % (var, per)),
+    os.path.join(odir, 'Tmu_%s_%s.nc' % (var, per)),
+    os.path.join(odir, 'Tsu_%s_%s.nc' % (var, per)),
+    os.path.join(odir, 'Tvi_%s_%s.nc' % (var, per))
 ]
 
 todos_existentes = all(os.path.exists(f) for f in archivos_salida)
@@ -72,7 +77,7 @@ if todos_existentes:
 # Calcula delta y residuo para cada modelo, luego agrupa por escenario
 j=0; k=0
 for exp in ['126', '245', '370', '585'][:]:
-    files = gb('data/%s/%s_%s*%s*.nc' % (tri, per, var, exp))
+    files = gb(os.path.join(idir, tri, '%s_%s*%s*.nc' % (per, var, exp)))
     i = 0
     print("Procesando escenario SSP%s..." % exp)
     for file in files[:]:
@@ -190,8 +195,8 @@ TOE = G / (VI) ** 0.5
 
 # Exporta los resultados a archivos NetCDF
 print("Guardando archivos de salida...")
-TOE.to_netcdf('out/toe_%s_%s.nc' % (var, per))
-MU.to_netcdf('out/Tmu_%s_%s.nc' % (var, per))
-SU.to_netcdf('out/Tsu_%s_%s.nc' % (var, per))
-VI.to_netcdf('out/Tvi_%s_%s.nc' % (var, per))
+TOE.to_netcdf(os.path.join(odir, 'toe_%s_%s.nc' % (var, per)))
+MU.to_netcdf(os.path.join(odir, 'Tmu_%s_%s.nc' % (var, per)))
+SU.to_netcdf(os.path.join(odir, 'Tsu_%s_%s.nc' % (var, per)))
+VI.to_netcdf(os.path.join(odir, 'Tvi_%s_%s.nc' % (var, per)))
 print("Calculo completado exitosamente.")

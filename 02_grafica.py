@@ -1,3 +1,9 @@
+# ============================
+# DIRECTORIOS (modificar aqui si es necesario)
+idir = 'out'    # Directorio de entrada (archivos .nc generados por el script de calculo)
+odir = 'figures'    # Directorio de salida (figuras .png)
+# ============================
+
 import numpy as np
 import xarray as xr
 import matplotlib.pyplot as plt
@@ -17,13 +23,15 @@ if tri == 'def': per = 'm1'
 elif tri == 'jja': per = 'm7'
 print(var, per)
 
+os.makedirs(odir, exist_ok=True)
+
 # VERIFICACION DE ARCHIVOS DE ENTRADA #########################
 # Verifica que los archivos de entrada existan antes de continuar
 archivos_entrada = [
-    'out/toe_%s_%s.nc' % (var, per),
-    'out/Tmu_%s_%s.nc' % (var, per),
-    'out/Tsu_%s_%s.nc' % (var, per),
-    'out/Tvi_%s_%s.nc' % (var, per)
+    os.path.join(idir, 'toe_%s_%s.nc' % (var, per)),
+    os.path.join(idir, 'Tmu_%s_%s.nc' % (var, per)),
+    os.path.join(idir, 'Tsu_%s_%s.nc' % (var, per)),
+    os.path.join(idir, 'Tvi_%s_%s.nc' % (var, per))
 ]
 
 for archivo in archivos_entrada:
@@ -44,7 +52,7 @@ plt.rcParams.update({
     'font.size': 12,
 })
 # CARGA DE DATOS TOE #########################
-ofile = 'out/toe_%s_%s.nc' % (var, per)
+ofile = os.path.join(idir, 'toe_%s_%s.nc' % (var, per))
 TOE = xr.open_dataset(ofile)['__xarray_dataarray_variable__']
 
 # PARTE 1: CONSTRUCCION DE MATRIZ TEMPORAL DE TOE #########################
@@ -110,7 +118,7 @@ ax.set_xlabel('Longitud')
 ax.set_ylabel('Latitud')
 ax.set_title('Time of Emergence - Umbral alto (%s, %s)' % (var.upper(), tri.upper()))
 plt.tight_layout()
-plt.savefig('out/TOE_%s_%s_umbral_alto.png' % (var, tri), dpi=100, bbox_inches='tight')
+plt.savefig(os.path.join(odir, 'TOE_%s_%s_umbral_alto.png' % (var, tri)), dpi=100, bbox_inches='tight')
 plt.close()
 
 # --- Mapa umbral bajo (TOE_1: +1°C para tas, -1 para pr) ---
@@ -126,7 +134,7 @@ ax.set_xlabel('Longitud')
 ax.set_ylabel('Latitud')
 ax.set_title('Time of Emergence - Umbral bajo (%s, %s)' % (var.upper(), tri.upper()))
 plt.tight_layout()
-plt.savefig('out/TOE_%s_%s_umbral_bajo.png' % (var, tri), dpi=100, bbox_inches='tight')
+plt.savefig(os.path.join(odir, 'TOE_%s_%s_umbral_bajo.png' % (var, tri)), dpi=100, bbox_inches='tight')
 plt.close()
 
 # PARTE 4: DECOMPOSICION DE INCERTIDUMBRE PARA PERU #########################
@@ -135,15 +143,15 @@ plt.close()
 
 varn = '__xarray_dataarray_variable__'
 
-mu_perc = xr.open_dataset('out/Tmu_%s_%s.nc' % (var, per))[varn]\
+mu_perc = xr.open_dataset(os.path.join(idir, 'Tmu_%s_%s.nc' % (var, per)))[varn]\
     .sel(lat=slice(-17, -12), lon=slice(-75, -70))\
     .mean(dim=['lon', 'lat'])
 
-su_perc = xr.open_dataset('out/Tsu_%s_%s.nc' % (var, per))[varn]\
+su_perc = xr.open_dataset(os.path.join(idir, 'Tsu_%s_%s.nc' % (var, per)))[varn]\
     .sel(lat=slice(-17, -12), lon=slice(-75, -70))\
     .mean(dim=['lon', 'lat'])
 
-vi_perc = xr.open_dataset('out/Tvi_%s_%s.nc' % (var, per))[varn]\
+vi_perc = xr.open_dataset(os.path.join(idir, 'Tvi_%s_%s.nc' % (var, per)))[varn]\
     .sel(lat=slice(-17, -12), lon=slice(-75, -70))\
     .mean(dim=['lon', 'lat'])
 
@@ -170,6 +178,6 @@ ax.margins(0, 0)
 ax.set_xlim(2020, 2100)
 ax.set_ylim(0, 100)
 
-plt.savefig('out/Fraccion_incertidumbre_peru_%s_%s_interpol.png' % (var, tri),
+plt.savefig(os.path.join(odir, 'Fraccion_incertidumbre_peru_%s_%s_interpol.png' % (var, tri)),
             dpi=100, bbox_inches='tight')
 plt.close()

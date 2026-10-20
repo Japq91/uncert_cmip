@@ -16,15 +16,19 @@ warnings.filterwarnings("ignore")
 ############################
 # READ COMMAND LINE ARGUMENTS
 var = sys.argv[1]       # Variable: 'pr' (precipitation) or 'tas' (temperature)
-tri = sys.argv[2]  # Season: 'djf' or 'jja'
+tri = sys.argv[2]  # Season: 'djf', 'mam', 'jja' or 'son'
 if len(sys.argv) > 3: idir = sys.argv[3]  # Input folder (optional)
 if len(sys.argv) > 4: odir = sys.argv[4]  # Output folder (optional)
 
 # SEASON TO FILE PREFIX
 # 'djf' (December-January-February) -> 'm1'
+# 'mam' (March-April-May) -> 'm4'
 # 'jja' (June-July-August) -> 'm7'
+# 'son' (September-October-November) -> 'm10'
 if tri == 'djf': per = 'm1'
+elif tri == 'mam': per = 'm4'
 elif tri == 'jja': per = 'm7'
+elif tri == 'son': per = 'm10'
 print(var, per)
 
 # FUNCTIONS #########################
@@ -101,7 +105,8 @@ for n, exp in enumerate(scenarios):
         sys.exit(1)
     i = 0
     for file in files[:]:
-        ds = xr.open_dataset(file)
+        ds0 = xr.open_dataset(file)
+        ds = ds0.sortby('lat', ascending=True)  # Make sure latitude goes from south to north
         delta, residuo = polinom(ds, var)
         if i == 0:
             delta2 = delta

@@ -36,6 +36,8 @@ Las anomalías se calculan respecto al periodo de referencia **1981–2010**.
 Los modelos y escenarios se detectan automáticamente a partir de los nombres de archivo en
 `data/<trimestre>/` (formato `<per>_<var>_<modelo>_ssp<XXX>.nc`). Para agregar o quitar uno,
 basta con agregar o borrar sus archivos. Se necesitan al menos 2 escenarios y 2 modelos por escenario.
+Para usar los trimestres `mam` o `son`, crea `data/mam/` (archivos `m4_...`) o `data/son/`
+(archivos `m10_...`) con el mismo formato.
 
 ## Instalación
 
@@ -93,8 +95,8 @@ bash 00_procesa.sh <variable> <trimestre> [carpeta_entrada] [carpeta_salida] [ca
 | Argumento | Valores | Por defecto |
 |---|---|---|
 | `variable` | `pr` (precipitación) o `tas` (temperatura) | obligatorio |
-| `trimestre` | `djf` (dic-ene-feb) o `jja` (jun-jul-ago) | obligatorio |
-| `carpeta_entrada` | carpeta con las subcarpetas `djf/` y `jja/` | `data` |
+| `trimestre` | `djf` (dic-ene-feb), `mam` (mar-abr-may), `jja` (jun-jul-ago) o `son` (sep-oct-nov) | obligatorio |
+| `carpeta_entrada` | carpeta con una subcarpeta por trimestre (`djf/`, `jja/`, ...) | `data` |
 | `carpeta_salida` | carpeta para los `.nc` de resultados | `out` |
 | `carpeta_figuras` | carpeta para las figuras `.png` | `figures` |
 

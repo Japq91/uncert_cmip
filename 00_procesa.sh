@@ -11,7 +11,7 @@
 usage() {
     echo "Usage: bash $0 <variable> <season> [input_dir] [output_dir] [figures_dir]"
     echo "  variable     pr | tas"
-    echo "  season       djf | jja"
+    echo "  season       djf | mam | jja | son"
     echo "  input_dir    folder with <season>/ subfolders   (default: data)"
     echo "  output_dir   folder for the .nc results          (default: out)"
     echo "  figures_dir  folder for the .png figures         (default: figures)"
@@ -27,7 +27,7 @@ if [ $# -lt 2 ] || [ $# -gt 5 ]; then
 fi
 
 VAR="$1"              # "pr" or "tas"
-TRI="$2"              # "djf" or "jja"
+TRI="$2"              # "djf", "mam", "jja" or "son"
 IDIR="${3:-data}"     # Input folder
 ODIR="${4:-out}"      # Output folder (.nc)
 FDIR="${5:-figures}"  # Figures folder (.png)
@@ -39,8 +39,10 @@ esac
 
 case "$TRI" in
     djf) PER="m1" ;;
+    mam) PER="m4" ;;
     jja) PER="m7" ;;
-    *) echo "ERROR: Season '$TRI' is not valid. Use 'djf' or 'jja'."; usage; exit 1 ;;
+    son) PER="m10" ;;
+    *) echo "ERROR: Season '$TRI' is not valid. Use 'djf', 'mam', 'jja' or 'son'."; usage; exit 1 ;;
 esac
 
 # --- Check input folder ---

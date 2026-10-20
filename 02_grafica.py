@@ -14,15 +14,19 @@ import os
 ############################
 # VARIABLE AND SEASON
 var = sys.argv[1]       # Variable: 'pr' (precipitation) or 'tas' (temperature)
-tri = sys.argv[2]  # Season: 'djf' or 'jja'
+tri = sys.argv[2]  # Season: 'djf', 'mam', 'jja' or 'son'
 if len(sys.argv) > 3: idir = sys.argv[3]  # Input folder (optional)
 if len(sys.argv) > 4: odir = sys.argv[4]  # Output folder (optional)
 
 # SEASON TO FILE PREFIX
 # 'djf' (December-January-February) -> 'm1'
+# 'mam' (March-April-May) -> 'm4'
 # 'jja' (June-July-August) -> 'm7'
+# 'son' (September-October-November) -> 'm10'
 if tri == 'djf': per = 'm1'
+elif tri == 'mam': per = 'm4'
 elif tri == 'jja': per = 'm7'
+elif tri == 'son': per = 'm10'
 print(var, per)
 
 os.makedirs(odir, exist_ok=True)

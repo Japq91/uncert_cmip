@@ -8,6 +8,7 @@ import pandas as pd
 import xarray as xr
 from glob import glob as gb
 import os
+import re
 import sys
 import warnings
 warnings.filterwarnings("ignore")
@@ -73,13 +74,30 @@ if todos_existentes:
 
 ############################
 # PART 1: READ DATA AND FIT POLYNOMIAL
-# Read the NetCDF files for each SSP scenario (126, 245, 370, 585)
+# Read the NetCDF files for each SSP scenario found in the input folder
 # Get delta and residual for each model, then group by scenario
+
+# Find scenarios from the file names (..._ssp126.nc -> '126')
+all_files = gb(os.path.join(idir, tri, '%s_%s_*_ssp*.nc' % (per, var)))
+matches = [re.search(r'_ssp(\d+)\.nc$', f) for f in all_files]
+scenarios = sorted({m.group(1) for m in matches if m})
+print("Scenarios found: %s" % ', '.join('SSP' + e for e in scenarios))
+
+# Scenario uncertainty is the variance between scenarios: we need at least 2
+if len(scenarios) < 2:
+    print("ERROR: Need at least 2 scenarios in %s, found %d."
+          % (os.path.join(idir, tri), len(scenarios)))
+    sys.exit(1)
+
 j=0; k=0
-for exp in ['126', '245', '370', '585'][:]:
-    files = gb(os.path.join(idir, tri, '%s_%s*%s*.nc' % (per, var, exp)))
+for n, exp in enumerate(scenarios):
+    files = gb(os.path.join(idir, tri, '%s_%s_*_ssp%s.nc' % (per, var, exp)))
+    print("Processing scenario SSP%s (%d models)..." % (exp, len(files)))
+    # Model uncertainty is the variance between models: we need at least 2
+    if len(files) < 2:
+        print("ERROR: Need at least 2 models for SSP%s, found %d." % (exp, len(files)))
+        sys.exit(1)
     i = 0
-    print("Processing scenario SSP%s..." % exp)
     for file in files[:]:
         ds = xr.open_dataset(file)
         delta, residuo = polinom(ds, var)
@@ -104,7 +122,7 @@ for exp in ['126', '245', '370', '585'][:]:
     # Mean of all models (one scenario)
     prom_delta21 = delta21.groupby('time.year').mean()
 
-    if '126' in exp:
+    if n == 0:
         lst_var_mdl = var_delta21
         lst_prom_mdl = prom_delta21
     else:

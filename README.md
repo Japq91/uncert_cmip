@@ -33,6 +33,10 @@ Las anomalías se calculan respecto al periodo de referencia **1981–2010**.
 **Modelos:** ACCESS-CM2, AWI-CM-1-1-MR, FGOALS-f3-L, GFDL-ESM4, IPSL-CM6A-LR, KACE-1-0-G, MRI-ESM2-0  
 **Escenarios:** SSP1-2.6, SSP2-4.5, SSP3-7.0, SSP5-8.5
 
+Los modelos y escenarios se detectan automáticamente a partir de los nombres de archivo en
+`data/<trimestre>/` (formato `<per>_<var>_<modelo>_ssp<XXX>.nc`). Para agregar o quitar uno,
+basta con agregar o borrar sus archivos. Se necesitan al menos 2 escenarios y 2 modelos por escenario.
+
 ## Instalación
 
 ### 1. Instalar `uv` (solo una vez)

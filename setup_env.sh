@@ -16,7 +16,6 @@ PACKAGES=(
     "pandas<3"      # The code uses '12M' and '1Y' frequencies, removed in pandas 3
     "xarray"
     "netCDF4"       # Needed for open_dataset / to_netcdf
-    "scipy"
     "matplotlib"
     "geopandas"     # Reads shapefiles
 )

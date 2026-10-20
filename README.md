@@ -59,7 +59,7 @@ bash setup_env.sh
 ```
 
 Esto crea la carpeta `.venv/` con Python 3.11 e instala `numpy`, `pandas<3`, `xarray`,
-`netCDF4`, `scipy`, `matplotlib` y `geopandas`.
+`netCDF4`, `matplotlib` y `geopandas`.
 
 Opcionalmente puedes indicar otra carpeta y otra versión de Python:
 

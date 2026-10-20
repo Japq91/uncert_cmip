@@ -106,7 +106,7 @@ for n, exp in enumerate(scenarios):
     i = 0
     for file in files[:]:
         ds0 = xr.open_dataset(file)
-        ds = ds0.sortby('lat', ascending=True)  # Make sure latitude goes from south to north
+        ds = ds0[[var]].sortby('lat', ascending=True)  # Make sure latitude goes from south to north
         delta, residuo = polinom(ds, var)
         if i == 0:
             delta2 = delta

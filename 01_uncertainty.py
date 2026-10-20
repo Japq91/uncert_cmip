@@ -1,5 +1,5 @@
 # ============================
-# DIRECTORIES (change here if needed)
+# DIRECTORIES (defaults; can also be given as arguments 3 and 4)
 idir = 'data'   # Input folder (one subfolder per season: data/<tri>/)
 odir = 'out'    # Output folder
 # ============================
@@ -17,6 +17,8 @@ warnings.filterwarnings("ignore")
 # READ COMMAND LINE ARGUMENTS
 var = sys.argv[1]       # Variable: 'pr' (precipitation) or 'tas' (temperature)
 tri = sys.argv[2]  # Season: 'djf' or 'jja'
+if len(sys.argv) > 3: idir = sys.argv[3]  # Input folder (optional)
+if len(sys.argv) > 4: odir = sys.argv[4]  # Output folder (optional)
 
 # SEASON TO FILE PREFIX
 # 'djf' (December-January-February) -> 'm1'

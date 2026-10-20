@@ -87,20 +87,29 @@ Sabrás que está activo porque el prompt mostrará `(.venv)` al inicio. Para sa
 Con el entorno activado:
 
 ```bash
-bash 00_procesa.sh <variable> <trimestre>
+bash 00_procesa.sh <variable> <trimestre> [carpeta_entrada] [carpeta_salida] [carpeta_figuras]
 ```
 
-| Argumento | Valores |
-|---|---|
-| `variable` | `pr` (precipitación) o `tas` (temperatura) |
-| `trimestre` | `djf` (dic-ene-feb) o `jja` (jun-jul-ago) |
+| Argumento | Valores | Por defecto |
+|---|---|---|
+| `variable` | `pr` (precipitación) o `tas` (temperatura) | obligatorio |
+| `trimestre` | `djf` (dic-ene-feb) o `jja` (jun-jul-ago) | obligatorio |
+| `carpeta_entrada` | carpeta con las subcarpetas `djf/` y `jja/` | `data` |
+| `carpeta_salida` | carpeta para los `.nc` de resultados | `out` |
+| `carpeta_figuras` | carpeta para las figuras `.png` | `figures` |
 
 Ejemplos:
 
 ```bash
 bash 00_procesa.sh tas jja
 bash 00_procesa.sh pr djf
+bash 00_procesa.sh pr djf data resultados graficos
 ```
+
+Antes de correr, el script revisa los argumentos y se detiene con un mensaje si la variable o el
+trimestre no son válidos, si la carpeta de entrada (o su subcarpeta del trimestre) no existe o no
+tiene archivos, o si alguna carpeta de salida es en realidad un archivo. Las carpetas de salida
+se crean si no existen.
 
 Para procesar las cuatro combinaciones:
 
@@ -108,8 +117,8 @@ Para procesar las cuatro combinaciones:
 for v in pr tas; do for t in djf jja; do bash 00_procesa.sh $v $t; done; done
 ```
 
-Si los archivos de `out/` ya existen, `01_uncertainty.py` omite el cálculo y pasa directo a las gráficas.
-Para recalcular, borra los archivos correspondientes en `out/`.
+Si los archivos de la carpeta de salida ya existen, `01_uncertainty.py` omite el cálculo y pasa
+directo a las gráficas. Para recalcular, borra los archivos correspondientes.
 
 ## Resultados
 
@@ -126,5 +135,6 @@ Para recalcular, borra los archivos correspondientes en `out/`.
 - `Fraccion_incertidumbre_peru_<var>_<tri>_interpol.png` — fracción de cada fuente de
   incertidumbre (2020–2100) promediada en el sur de Perú (17°S–12°S, 75°W–70°W)
 
-Las carpetas de entrada y salida se pueden cambiar en las variables `idir` y `odir` al
-inicio de cada script `.py`.
+Los nombres de archivo de arriba son relativos a las carpetas por defecto (`out/` y `figures/`);
+si pasas otras carpetas como argumento, los resultados se guardan ahí. Los valores por defecto
+están en las variables `idir` y `odir` al inicio de cada script `.py`.

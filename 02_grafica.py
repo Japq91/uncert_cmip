@@ -1,5 +1,5 @@
 # ============================
-# DIRECTORIES (change here if needed)
+# DIRECTORIES (defaults; can also be given as arguments 3 and 4)
 idir = 'out'    # Input folder (.nc files made by 01_uncertainty.py)
 odir = 'figures'    # Output folder (.png figures)
 # ============================
@@ -15,6 +15,8 @@ import os
 # VARIABLE AND SEASON
 var = sys.argv[1]       # Variable: 'pr' (precipitation) or 'tas' (temperature)
 tri = sys.argv[2]  # Season: 'djf' or 'jja'
+if len(sys.argv) > 3: idir = sys.argv[3]  # Input folder (optional)
+if len(sys.argv) > 4: odir = sys.argv[4]  # Output folder (optional)
 
 # SEASON TO FILE PREFIX
 # 'djf' (December-January-February) -> 'm1'

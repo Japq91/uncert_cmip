@@ -25,7 +25,7 @@ Las anomalías se calculan respecto al periodo de referencia **1981–2010**.
 ├── Clase.ipynb         # Versión paso a paso del análisis (notebook)
 ├── uncert_2026.ppt     # Presentación
 ├── data/
-│   ├── def/            # Archivos m1_<var>_<modelo>_<ssp>.nc  (diciembre-enero-febrero)
+│   ├── djf/            # Archivos m1_<var>_<modelo>_<ssp>.nc  (diciembre-enero-febrero)
 │   └── jja/            # Archivos m7_<var>_<modelo>_<ssp>.nc  (junio-julio-agosto)
 └── shape/              # Shapefiles de Perú y Sudamérica
 ```
@@ -89,19 +89,19 @@ bash 00_procesa.sh <variable> <trimestre>
 | Argumento | Valores |
 |---|---|
 | `variable` | `pr` (precipitación) o `tas` (temperatura) |
-| `trimestre` | `def` (dic-ene-feb) o `jja` (jun-jul-ago) |
+| `trimestre` | `djf` (dic-ene-feb) o `jja` (jun-jul-ago) |
 
 Ejemplos:
 
 ```bash
 bash 00_procesa.sh tas jja
-bash 00_procesa.sh pr def
+bash 00_procesa.sh pr djf
 ```
 
 Para procesar las cuatro combinaciones:
 
 ```bash
-for v in pr tas; do for t in def jja; do bash 00_procesa.sh $v $t; done; done
+for v in pr tas; do for t in djf jja; do bash 00_procesa.sh $v $t; done; done
 ```
 
 Si los archivos de `out/` ya existen, `01_uncertainty.py` omite el cálculo y pasa directo a las gráficas.

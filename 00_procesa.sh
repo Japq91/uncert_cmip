@@ -2,47 +2,48 @@
 
 # =============================================================================
 # Script: 00_procesa.sh
-# Ejecuta el flujo completo de analisis TOE:
-#   1. 01_uncertainty.py  -> Calcula incertidumbres y TOE
-#   2. 02_grafica.py     -> Genera mapas y graficos
+# Runs the full TOE analysis:
+#   1. 01_uncertainty.py  -> uncertainties and TOE
+#   2. 02_grafica.py     -> maps and plots
+# Activate the virtual environment first: source .venv/bin/activate
 # =============================================================================
 
-# --- Validacion de argumentos ---
+# --- Check arguments ---
 if [ $# -ne 2 ]; then
-    echo "Uso: $0 <variable> <trimestre>"
-    echo "Ejemplo: $0 tas jja"
-    echo "Ejemplo: $0 pr def"
+    echo "Usage: $0 <variable> <season>"
+    echo "Example: $0 tas jja"
+    echo "Example: $0 pr djf"
     exit 1
 fi
 
-VAR="$1" #"tas" #"pr" "tas"
-TRI="$2" #"def" #"jja" "def"
+VAR="$1" # "pr" or "tas"
+TRI="$2" # "djf" or "jja"
 
-# --- Verifica que los scripts existan ---
+# --- Check that the scripts exist ---
 for script in 01_uncertainty.py 02_grafica.py; do
     if [ ! -f "$script" ]; then
-        echo "ERROR: No se encontro '$script'"
+        echo "ERROR: '$script' not found"
         exit 1
     fi
 done
 
-# --- Ejecuta el pipeline ---
-echo "Variable: $VAR | Trimestre: $TRI"
+# --- Run the pipeline ---
+echo "Variable: $VAR | Season: $TRI"
 echo "----------------------------------------"
 
-echo "[1/2] Ejecutando 01_uncertainty.py..."
+echo "[1/2] Running 01_uncertainty.py..."
 python 01_uncertainty.py "$VAR" "$TRI"
 if [ $? -ne 0 ]; then
-    echo "ERROR en 01_uncertainty.py"
+    echo "ERROR in 01_uncertainty.py"
     exit 1
 fi
 
-echo "[2/2] Ejecutando 02_grafica.py..."
+echo "[2/2] Running 02_grafica.py..."
 python 02_grafica.py "$VAR" "$TRI"
 if [ $? -ne 0 ]; then
-    echo "ERROR en 02_grafica.py"
+    echo "ERROR in 02_grafica.py"
     exit 1
 fi
 
 echo "----------------------------------------"
-echo "Pipeline completado: $VAR $TRI"
+echo "Pipeline finished: $VAR $TRI"

@@ -2,55 +2,55 @@
 
 # =============================================================================
 # Script: setup_env.sh
-# Crea un entorno virtual con uv e instala los paquetes del analisis TOE.
-# Uso: ./setup_env.sh [directorio_venv] [version_python]
-# Ejemplo: ./setup_env.sh .venv 3.11
+# Creates a virtual environment with uv and installs the packages.
+# Usage: bash setup_env.sh [venv_folder] [python_version]
+# Example: bash setup_env.sh .venv 3.11
 # =============================================================================
 
-# --- Configuracion (modificar si es necesario) ---
+# --- Settings (change if needed) ---
 VENV_DIR="${1:-.venv}"
 PY_VERSION="${2:-3.11}"
 
 PACKAGES=(
     "numpy"
-    "pandas<3"      # El script usa alias de frecuencia '12M' y '1Y', removidos en pandas 3
+    "pandas<3"      # The code uses '12M' and '1Y' frequencies, removed in pandas 3
     "xarray"
-    "netCDF4"       # Necesario para open_dataset / to_netcdf
+    "netCDF4"       # Needed for open_dataset / to_netcdf
     "scipy"
     "matplotlib"
-    "geopandas"     # Incluye dependencias para leer shapefiles
+    "geopandas"     # Reads shapefiles
 )
 
-# --- Verifica que uv este instalado ---
+# --- Check that uv is installed ---
 if ! command -v uv >/dev/null 2>&1; then
-    echo "ERROR: 'uv' no esta instalado."
-    echo "Instalelo con:"
+    echo "ERROR: 'uv' is not installed."
+    echo "Install it with:"
     echo "  curl -LsSf https://astral.sh/uv/install.sh | sh"
     exit 1
 fi
 
-# --- Crea el entorno virtual ---
+# --- Create the virtual environment ---
 if [ -d "$VENV_DIR" ]; then
-    echo "AVISO: '$VENV_DIR' ya existe. Se reutiliza (para recrearlo, eliminelo)."
+    echo "WARNING: '$VENV_DIR' already exists. Using it (delete it to start over)."
 else
-    echo "Creando entorno virtual en '$VENV_DIR' (Python $PY_VERSION)..."
+    echo "Creating virtual environment in '$VENV_DIR' (Python $PY_VERSION)..."
     uv venv "$VENV_DIR" --python "$PY_VERSION"
     if [ $? -ne 0 ]; then
-        echo "ERROR al crear el entorno virtual"
+        echo "ERROR creating the virtual environment"
         exit 1
     fi
 fi
 
-# --- Instala los paquetes ---
-echo "Instalando paquetes..."
+# --- Install packages ---
+echo "Installing packages..."
 uv pip install --python "$VENV_DIR/bin/python" "${PACKAGES[@]}"
 if [ $? -ne 0 ]; then
-    echo "ERROR al instalar los paquetes"
+    echo "ERROR installing packages"
     exit 1
 fi
 
 echo "----------------------------------------"
-echo "Entorno listo. Para activarlo:"
+echo "Environment ready. To activate it:"
 echo "  source $VENV_DIR/bin/activate"
-echo "Luego ejecute, por ejemplo:"
+echo "Then run, for example:"
 echo "  bash 00_procesa.sh tas jja"

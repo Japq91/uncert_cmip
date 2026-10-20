@@ -1,7 +1,7 @@
 # ============================
-# DIRECTORIOS (modificar aqui si es necesario)
-idir = 'out'    # Directorio de entrada (archivos .nc generados por el script de calculo)
-odir = 'figures'    # Directorio de salida (figuras .png)
+# DIRECTORIES (change here if needed)
+idir = 'out'    # Input folder (.nc files made by 01_uncertainty.py)
+odir = 'figures'    # Output folder (.png figures)
 # ============================
 
 import numpy as np
@@ -12,21 +12,21 @@ import sys
 import os
 
 ############################
-# CONFIGURACION DE VARIABLES Y PERIODO
-var = sys.argv[1]       # Variable: 'pr' (precipitacion) o 'tas' (temperatura)
-tri = sys.argv[2]  #  Trimestre : 'jja'
+# VARIABLE AND SEASON
+var = sys.argv[1]       # Variable: 'pr' (precipitation) or 'tas' (temperature)
+tri = sys.argv[2]  # Season: 'djf' or 'jja'
 
-# MAPEO DE PERIODOS
-# 'def' (default/estandar) se mapea a periodo 'm1'
-# 'jja' (junio-julio-agosto) se mapea a periodo 'm7'
-if tri == 'def': per = 'm1'
+# SEASON TO FILE PREFIX
+# 'djf' (December-January-February) -> 'm1'
+# 'jja' (June-July-August) -> 'm7'
+if tri == 'djf': per = 'm1'
 elif tri == 'jja': per = 'm7'
 print(var, per)
 
 os.makedirs(odir, exist_ok=True)
 
-# VERIFICACION DE ARCHIVOS DE ENTRADA #########################
-# Verifica que los archivos de entrada existan antes de continuar
+# CHECK INPUT FILES #########################
+# Make sure the input files exist before going on
 archivos_entrada = [
     os.path.join(idir, 'toe_%s_%s.nc' % (var, per)),
     os.path.join(idir, 'Tmu_%s_%s.nc' % (var, per)),
@@ -36,13 +36,13 @@ archivos_entrada = [
 
 for archivo in archivos_entrada:
     if not os.path.exists(archivo):
-        print("ERROR: No se encontro el archivo de entrada:")
+        print("ERROR: Input file not found:")
         print("  -> %s" % archivo)
-        print("Ejecute primero el script de calculo de incertidumbre.")
+        print("Run 01_uncertainty.py first.")
         sys.exit(1)
 
-# CARGA DE SHAPEFILES (limites geograficos) #########################
-# Carga los shapefiles de Peru y Sudamerica para los mapas
+# LOAD SHAPEFILES (borders) #########################
+# Peru and South America shapefiles for the maps
 shp_peru = gpd.read_file('shape/peru.shp')
 shp_suda = gpd.read_file('shape/suda.shp')
 #
@@ -51,29 +51,29 @@ plt.rcParams.update({
     'font.serif': ['DejaVu Serif'],
     'font.size': 12,
 })
-# CARGA DE DATOS TOE #########################
+# LOAD TOE DATA #########################
 ofile = os.path.join(idir, 'toe_%s_%s.nc' % (var, per))
 TOE = xr.open_dataset(ofile)['__xarray_dataarray_variable__']
 
-# PARTE 1: CONSTRUCCION DE MATRIZ TEMPORAL DE TOE #########################
-# Crea una matriz t_TOE donde cada celda contiene el año en que TOE
-# supera el umbral correspondiente para cada punto de grilla
+# PART 1: BUILD TOE YEAR GRID #########################
+# t_TOE holds, for each grid point, the year when TOE
+# passes the threshold
 
-t_TOE = TOE * np.nan  # Inicializa con NaN
+t_TOE = TOE * np.nan  # Start with NaN
 tpr = 2020
 
 for tpru in range(len(TOE.time)):
     t_TOE = t_TOE.where(~((TOE < tpr) & (TOE['time.year'] == tpr)), tpr)
     tpr = tpr + 1
 
-# PARTE 2: APLICACION DE UMBRALES POR VARIABLE #########################
-# Para precipitacion (pr): umbral negativo (-1) y positivo (+1)
-# Para temperatura (tas): umbral +1 y +2 (grados de anomalia)
+# PART 2: THRESHOLDS FOR EACH VARIABLE #########################
+# Precipitation (pr): negative (-1) and positive (+1) threshold
+# Temperature (tas): +1 and +2 threshold
 
 if var == 'pr':
-    # --- UMBRALES PARA PRECIPITACION ---
+    # --- PRECIPITATION THRESHOLDS ---
     for umbr in [-1, 1]:
-        TOE_umbr = TOE[0] * 0  # Inicializa en cero
+        TOE_umbr = TOE[0] * 0  # Start with zero
         for t in range(len(TOE.time)):
             if umbr == -1:
                 TOE_umbr = TOE_umbr.where(
@@ -89,23 +89,23 @@ if var == 'pr':
     TOE_2 = TOE_umbralpositivo_pr.where(~(TOE_umbralpositivo_pr == 0), np.nan)
 
 else:
-    # --- UMBRALES PARA TEMPERATURA ---
+    # --- TEMPERATURE THRESHOLDS ---
     for umbr in [1, 2]:
-        TOE_umbr = TOE[0] * 0  # Inicializa en cero
+        TOE_umbr = TOE[0] * 0  # Start with zero
         for t in range(len(TOE.time)):
             TOE_umbr = TOE_umbr.where(
                 ~((TOE[t] > umbr) & (TOE_umbr <= 0)), t_TOE[t]
             )
             if umbr == 1:
-                TOE_u1_tas = TOE_umbr  # Umbral +1°C
+                TOE_u1_tas = TOE_umbr  # +1 threshold
             else:
-                TOE_u2_tas = TOE_umbr  # Umbral +2°C
+                TOE_u2_tas = TOE_umbr  # +2 threshold
     TOE_1 = TOE_u1_tas.where(~(TOE_u1_tas == 0), np.nan)
     TOE_2 = TOE_u2_tas.where(~(TOE_u2_tas == 0), np.nan)
 
-# PARTE 3: MAPAS DE TOE #########################
+# PART 3: TOE MAPS #########################
 
-# --- Mapa umbral alto (TOE_2: +2°C para tas, +1 para pr) ---
+# --- High threshold map (TOE_2: +2 for tas, +1 for pr) ---
 fig, ax = plt.subplots(figsize=(10, 8))
 TOE_2.plot(ax=ax, levels=np.arange(2020, 2104, 4), cmap='turbo')
 ax.set_xlim(-83, -67)   #
@@ -113,7 +113,7 @@ ax.set_ylim(-19, 0.5)     #
 # --- SHAPEFILES ---
 shp_peru.plot(ax=ax, fc='none', edgecolor='black', linewidth=0.8)
 shp_suda.plot(ax=ax, fc='white', edgecolor='gray', linewidth=0.3)
-# --- ETIQUETAS ---
+# --- LABELS ---
 ax.set_xlabel('Longitud')
 ax.set_ylabel('Latitud')
 ax.set_title('Time of Emergence - Umbral alto (%s, %s)' % (var.upper(), tri.upper()))
@@ -121,15 +121,15 @@ plt.tight_layout()
 plt.savefig(os.path.join(odir, 'TOE_%s_%s_umbral_alto.png' % (var, tri)), dpi=100, bbox_inches='tight')
 plt.close()
 
-# --- Mapa umbral bajo (TOE_1: +1°C para tas, -1 para pr) ---
+# --- Low threshold map (TOE_1: +1 for tas, -1 for pr) ---
 fig, ax = plt.subplots(figsize=(10, 8))
 TOE_1.plot(ax=ax, levels=np.arange(2020, 2104, 4), cmap='turbo')
-ax.set_xlim(-83, -67)   # Longitud
-ax.set_ylim(-19, 0.5)     # Latitud
+ax.set_xlim(-83, -67)   # Longitude
+ax.set_ylim(-19, 0.5)     # Latitude
 # --- SHAPEFILES ---
 shp_peru.plot(ax=ax, fc='none', edgecolor='black', linewidth=0.8)
 shp_suda.plot(ax=ax, fc='white', edgecolor='gray', linewidth=0.3)
-# --- ETIQUETAS ---
+# --- LABELS ---
 ax.set_xlabel('Longitud')
 ax.set_ylabel('Latitud')
 ax.set_title('Time of Emergence - Umbral bajo (%s, %s)' % (var.upper(), tri.upper()))
@@ -137,9 +137,9 @@ plt.tight_layout()
 plt.savefig(os.path.join(odir, 'TOE_%s_%s_umbral_bajo.png' % (var, tri)), dpi=100, bbox_inches='tight')
 plt.close()
 
-# PARTE 4: DECOMPOSICION DE INCERTIDUMBRE PARA PERU #########################
-# Calcula la fraccion porcentual de cada componente de incertidumbre
-# en la region de Peru (lat: -17 a -12, lon: -75 a -70)
+# PART 4: UNCERTAINTY SPLIT FOR PERU #########################
+# Percent of each uncertainty source
+# in the Peru region (lat: -17 to -12, lon: -75 to -70)
 
 varn = '__xarray_dataarray_variable__'
 
@@ -155,13 +155,13 @@ vi_perc = xr.open_dataset(os.path.join(idir, 'Tvi_%s_%s.nc' % (var, per)))[varn]
     .sel(lat=slice(-17, -12), lon=slice(-75, -70))\
     .mean(dim=['lon', 'lat'])
 
-# Incertidumbre total y fraccion porcentual de cada componente
+# Total uncertainty and percent of each source
 total = vi_perc + su_perc + mu_perc
-pvi = vi_perc * 100 / total   # Variabilidad Interna (%)
-psu = su_perc * 100 / total   # Incertidumbre de Escenario (%)
-pmu = mu_perc * 100 / total   # Incertidumbre de Modelo (%)
+pvi = vi_perc * 100 / total   # Internal Variability (%)
+psu = su_perc * 100 / total   # Scenario Uncertainty (%)
+pmu = mu_perc * 100 / total   # Model Uncertainty (%)
 
-# PARTE 5: GRAFICO DE FRACCION DE INCERTIDUMBRE #########################
+# PART 5: UNCERTAINTY FRACTION PLOT #########################
 
 color_m = ['#1a4a8c', '#fb0b26', '#fbd326']
 label = ['Incertidumbre Modelo', 'Incertidumbre Escenario', 'Variabilidad Interna']

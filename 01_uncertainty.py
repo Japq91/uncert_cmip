@@ -1,7 +1,7 @@
 # ============================
-# DIRECTORIOS (modificar aqui si es necesario)
-idir = 'data'   # Directorio de entrada (contiene subcarpetas por trimestre: data/<tri>/)
-odir = 'out'    # Directorio de salida
+# DIRECTORIES (change here if needed)
+idir = 'data'   # Input folder (one subfolder per season: data/<tri>/)
+odir = 'out'    # Output folder
 # ============================
 
 import pandas as pd
@@ -13,44 +13,44 @@ import warnings
 warnings.filterwarnings("ignore")
 
 ############################
-# LECTURA DE ARGUMENTOS DE LINEA DE COMANDOS
-var = sys.argv[1]       # Variable: 'pr' (precipitacion) o 'tas' (temperatura)
-tri = sys.argv[2]  #  Trimestre : 'jja'
+# READ COMMAND LINE ARGUMENTS
+var = sys.argv[1]       # Variable: 'pr' (precipitation) or 'tas' (temperature)
+tri = sys.argv[2]  # Season: 'djf' or 'jja'
 
-# MAPEO DE PERIODOS
-# 'def' (default/estandar) se mapea a periodo 'm1'
-# 'jja' (junio-julio-agosto) se mapea a periodo 'm7'
-if tri == 'def': per = 'm1'
+# SEASON TO FILE PREFIX
+# 'djf' (December-January-February) -> 'm1'
+# 'jja' (June-July-August) -> 'm7'
+if tri == 'djf': per = 'm1'
 elif tri == 'jja': per = 'm7'
 print(var, per)
 
-# FUNCIONES #########################
+# FUNCTIONS #########################
 
 def polinom(d, var):
     """
-    Ajusta un polinomio de grado 4 a la serie temporal y calcula:
-    - delta: anomalia respecto al periodo de referencia 1981-2010
-    - residuo: desviacion porcentual del dato respecto al polinomio
+    Fit a degree 4 polynomial to the time series and return:
+    - delta: anomaly from the 1981-2010 reference period
+    - residuo: percent difference between the data and the polynomial
     """
-    # Genera los coeficientes del polinomio de grado 4
+    # Polynomial coefficients (degree 4)
     coef = d.polyfit(dim='time', deg=4, full=True)
-    # Serie polinomica ajustada
+    # Fitted polynomial series
     s_poli = xr.polyval(coord=d.time, coeffs=coef['%s_polyfit_coefficients' % var])
-    # Residuo = ε(t): desviacion porcentual del dato respecto al polinomio
+    # Residual = e(t): percent difference between data and polynomial
     residuo0 = ((d[var] / s_poli) * 100) - 100
-    # Promedio del Periodo de Referencia (1981-2010)
+    # Mean of the reference period (1981-2010)
     prom_PR = s_poli.sel(time=slice('1981', '2010')).mean(dim='time')
-    # Delta: anomalia respecto al periodo de referencia
+    # Delta: anomaly from the reference period
     if 't' in var:
-        # Para temperatura: diferencia absoluta ΔT
+        # Temperature: absolute difference (degrees)
         delta0 = s_poli - ((s_poli / s_poli) * prom_PR)
     else:
-        # Para precipitacion: diferencia porcentual ΔP
+        # Precipitation: percent difference
         delta0 = ((s_poli / prom_PR) * 100) - 100
     return delta0, residuo0
 
-# VERIFICACION DE ARCHIVOS EXISTENTES #########################
-# Si los 4 archivos de salida ya existen, se omite el calculo
+# CHECK EXISTING OUTPUT FILES #########################
+# If the 4 output files already exist, skip the calculation
 os.makedirs(odir, exist_ok=True)
 
 archivos_salida = [
@@ -64,22 +64,22 @@ todos_existentes = all(os.path.exists(f) for f in archivos_salida)
 
 if todos_existentes:
     print("=" * 50)
-    print("AVISO: Los archivos de salida ya existen.")
+    print("WARNING: Output files already exist.")
     for f in archivos_salida:
         print("  -> %s" % f)
-    print("Omitiendo calculo. Para recalcular, elimine los archivos.")
+    print("Skipping calculation. Delete these files to run it again.")
     print("=" * 50)
     sys.exit(0)
 
 ############################
-# PARTE 1: LECTURA DE DATOS Y AJUSTE POLINOMIAL
-# Procesa los archivos NetCDF de cada escenario SSP (126, 245, 370, 585)
-# Calcula delta y residuo para cada modelo, luego agrupa por escenario
+# PART 1: READ DATA AND FIT POLYNOMIAL
+# Read the NetCDF files for each SSP scenario (126, 245, 370, 585)
+# Get delta and residual for each model, then group by scenario
 j=0; k=0
 for exp in ['126', '245', '370', '585'][:]:
     files = gb(os.path.join(idir, tri, '%s_%s*%s*.nc' % (per, var, exp)))
     i = 0
-    print("Procesando escenario SSP%s..." % exp)
+    print("Processing scenario SSP%s..." % exp)
     for file in files[:]:
         ds = xr.open_dataset(file)
         delta, residuo = polinom(ds, var)
@@ -97,11 +97,11 @@ for exp in ['126', '245', '370', '585'][:]:
         k = k + 1
         i = i + 1
 
-    # Ordena cronologicamente y calcula estadisticas por escenario
+    # Sort by time and get statistics for this scenario
     delta21 = delta2.sortby('time', ascending=True)
-    # Varianza entre modelos de un escenario
+    # Variance between models (one scenario)
     var_delta21 = delta21.groupby('time.year').var()
-    # Promedio entre modelos de un escenario
+    # Mean of all models (one scenario)
     prom_delta21 = delta21.groupby('time.year').mean()
 
     if '126' in exp:
@@ -111,37 +111,37 @@ for exp in ['126', '245', '370', '585'][:]:
         lst_var_mdl = xr.concat([lst_var_mdl, var_delta21], dim='year')
         lst_prom_mdl = xr.concat([lst_prom_mdl, prom_delta21], dim='year')
 
-########## PARTE 2: AGREGACION DE ESCENARIOS Y CALCULO DE INCERTIDUMBRES #########
+########## PART 2: COMBINE SCENARIOS AND COMPUTE UNCERTAINTIES #########
 
-# Ordena las incertidumbres acumuladas por escenario
+# Sort the values collected for each scenario
 var_mdl_2 = lst_var_mdl.sortby('year', ascending=True)
 prom_mdl_2 = lst_prom_mdl.sortby('year', ascending=True)
 
-# Ordena los deltas y residuos de todos los modelos/escenarios
+# Sort deltas and residuals of all models and scenarios
 delta31 = delta3.sortby('time', ascending=True)
 residuo41 = residuo4.sortby('time', ascending=True)
 
-# G0: Promedio de todos los modelos en todos los escenarios (senal climatico)
+# G0: mean of all models and all scenarios (climate signal)
 G0 = delta31.groupby('time.year').mean()
 G0['year'] = pd.date_range('1981', freq='12M', periods=len(G0.year))
 G0 = G0.rename({'year': 'time'})
 
-# SU: Incertidumbre de Escenarios (Scenario Uncertainty)
-# Calculada como la varianza entre el promedio de modelos de cada escenario
+# SU: Scenario Uncertainty
+# Variance between the model means of each scenario
 SU0 = prom_mdl_2.groupby('year').var()
 SU0['year'] = pd.date_range('1981', freq='12M', periods=len(SU0.year))
 SU0 = SU0.rename({'year': 'time'})
 
-# MU: Incertidumbre de Modelos (Model Uncertainty)
-# Calculada como el promedio de la varianza entre modelos de cada escenario
+# MU: Model Uncertainty
+# Mean of the variance between models in each scenario
 MU0 = var_mdl_2.groupby('year').mean()
 MU0['year'] = pd.date_range('1981', freq='12M', periods=len(MU0.year))
 MU0 = MU0.rename({'year': 'time'})
 
-########## PARTE 3: CALCULO DE VARIANZA INTERNA (VI) CON VENTANAS MOVILES #########
+########## PART 3: INTERNAL VARIABILITY (VI) WITH MOVING WINDOWS #########
 
-# Calcula la desviacion estandar del residuo en ventanas de 30 anos
-# La ventana se desplaza ano a ano, generando una serie temporal de VI
+# Standard deviation of the residual in 30-year windows
+# The window moves one year at a time, giving a VI time series
 year_c = 2010
 l = 0
 for ktime in range(len(ds['time']) - 30):
@@ -149,13 +149,13 @@ for ktime in range(len(ds['time']) - 30):
     yi = str(y_i.tolist())
     y_f = (residuo41['time.year'][ktime * k].values) + 29
     yf = str(y_f.tolist())
-    # Selecciona ventana de 30 anos
+    # Select a 30-year window
     residuo42 = residuo41.sel(time=slice(yi, yf))
-    # Desviacion estandar y varianza intra-ventana
+    # Standard deviation and variance inside the window
     residuo43_std = residuo42.std(dim='time')
     residuo43_var = residuo42.var(dim='time')
     year_c = year_c + 1
-    # Expande dimension temporal para concatenar
+    # Add a time dimension so we can concatenate
     time_d = pd.date_range('%d' % year_c, freq='1Y', periods=1)
     time_ds = xr.DataArray(time_d, [('time', time_d)])
     residuo44_std = residuo43_std.expand_dims(time=time_ds)
@@ -168,35 +168,35 @@ for ktime in range(len(ds['time']) - 30):
         residuo_45_var = xr.concat([residuo44_var, residuo_45_var], dim='time')
     l = l + 1
 
-########## PARTE 4: SUAVIZADO Y SELECCION DE PERIODO #########
+########## PART 4: SMOOTHING AND PERIOD SELECTION #########
 
-# Ordena y asigna fechas a la Varianza Interna
+# Sort Internal Variability and set its dates
 VI0 = residuo_45_std.sortby('time', ascending=True)
 VI0['time'] = pd.date_range('2011', freq='12M', periods=len(VI0.time))
-# Suavizado con media movil de 10 anos
+# 10-year moving average
 VI1 = VI0.rolling(time=10, center=False).mean()
 
-# Selecciona el periodo comun de analisis: 2020-2100
+# Keep the common analysis period: 2020-2100
 VI = VI1.sel(time=slice('2020', '2100'))
 G = G0.sel(time=slice('2020', '2100'))
 SU = SU0.sel(time=slice('2020', '2100'))
 MU = MU0.sel(time=slice('2020', '2100'))
 
-########## PARTE 5: CALCULO DE STN Y TOE, Y EXPORTACION #########
+########## PART 5: STN AND TOE, AND SAVE RESULTS #########
 
-# TU: Incertidumbre Total = Varianza Interna + Incertidumbre de Modelos + Incertidumbre de Escenarios
+# TU: Total Uncertainty = Internal Variability + Model Uncertainty + Scenario Uncertainty
 TU = VI + MU + SU
 
-# STN: Signal-to-Noise Ratio (relacion senal/ruido)
+# STN: Signal-to-Noise Ratio
 STN = G / (TU) ** 0.5
 
-# TOE: Time of Emergence (tiempo de emergencia del cambio climatico)
+# TOE: Time of Emergence (when the climate change signal emerges)
 TOE = G / (VI) ** 0.5
 
-# Exporta los resultados a archivos NetCDF
-print("Guardando archivos de salida...")
+# Save results as NetCDF files
+print("Saving output files...")
 TOE.to_netcdf(os.path.join(odir, 'toe_%s_%s.nc' % (var, per)))
 MU.to_netcdf(os.path.join(odir, 'Tmu_%s_%s.nc' % (var, per)))
 SU.to_netcdf(os.path.join(odir, 'Tsu_%s_%s.nc' % (var, per)))
 VI.to_netcdf(os.path.join(odir, 'Tvi_%s_%s.nc' % (var, per)))
-print("Calculo completado exitosamente.")
+print("Calculation finished.")

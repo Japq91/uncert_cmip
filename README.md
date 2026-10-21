@@ -213,7 +213,17 @@ figuras se vuelven a generar siempre (tardan pocos segundos).
 
 **`figures/`** (PNG):
 
-- `TOE_<var>_<tri>_umbral_alto.png` y `TOE_<var>_<tri>_umbral_bajo.png` — mapas del TOE
+- Mapas del TOE (año en que la señal emerge), dos por variable:
+
+  | Variable | Archivo | Umbral | Significado |
+  |---|---|---|---|
+  | `pr` | `TOE_pr_<tri>_umbral_positivo.png` | +1 | La precipitación **aumenta** por encima del ruido |
+  | `pr` | `TOE_pr_<tri>_umbral_negativo.png` | −1 | La precipitación **disminuye** por debajo del ruido |
+  | `tas` | `TOE_tas_<tri>_umbral_alto.png` | +2 | Calentamiento de 2 veces el ruido |
+  | `tas` | `TOE_tas_<tri>_umbral_bajo.png` | +1 | Calentamiento de 1 vez el ruido |
+
+  Los umbrales son una relación señal/ruido (`TOE = señal / √VI`), no grados ni porcentajes:
+  +2 para `tas` significa dos desviaciones estándar de la variabilidad interna, no +2 °C.
 - `Fraccion_incertidumbre_peru_<var>_<tri>_interpol.png` — fracción de cada fuente de
   incertidumbre en el periodo de los resultados, promediada en el sur de Perú
   (17°S–12°S, 75°W–70°W)

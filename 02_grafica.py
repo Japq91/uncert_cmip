@@ -123,8 +123,17 @@ else:
     TOE_2 = TOE_u2_tas.where(~(TOE_u2_tas == 0), np.nan)
 
 # PART 3: TOE MAPS #########################
+# Thresholds are signal-to-noise values (signal / std of internal variability)
+# pr:  TOE_2 = +1 (increase),  TOE_1 = -1 (decrease)
+# tas: TOE_2 = +2 (high),      TOE_1 = +1 (low)
+if var == 'pr':
+    name_2, title_2 = 'umbral_positivo', 'Aumento (+1)'
+    name_1, title_1 = 'umbral_negativo', 'Disminución (-1)'
+else:
+    name_2, title_2 = 'umbral_alto', 'Umbral alto (+2)'
+    name_1, title_1 = 'umbral_bajo', 'Umbral bajo (+1)'
 
-# --- High threshold map (TOE_2: +2 for tas, +1 for pr) ---
+# --- TOE_2 map ---
 fig, ax = plt.subplots(figsize=(10, 8))
 TOE_2.plot(ax=ax, levels=levels, cmap='turbo', cbar_kwargs=cbar_kw)
 ax.set_xlim(-83, -67)   #
@@ -135,12 +144,12 @@ shp_suda.plot(ax=ax, fc='white', edgecolor='gray', linewidth=0.3)
 # --- LABELS ---
 ax.set_xlabel('Longitud')
 ax.set_ylabel('Latitud')
-ax.set_title('Time of Emergence - Umbral alto (%s, %s, %d-%d)' % (var.upper(), tri.upper(), y_ini, y_end))
+ax.set_title('Time of Emergence - %s (%s, %s, %d-%d)' % (title_2, var.upper(), tri.upper(), y_ini, y_end))
 plt.tight_layout()
-plt.savefig(os.path.join(odir, 'TOE_%s_%s_umbral_alto.png' % (var, tri)), dpi=100, bbox_inches='tight')
+plt.savefig(os.path.join(odir, 'TOE_%s_%s_%s.png' % (var, tri, name_2)), dpi=100, bbox_inches='tight')
 plt.close()
 
-# --- Low threshold map (TOE_1: +1 for tas, -1 for pr) ---
+# --- TOE_1 map ---
 fig, ax = plt.subplots(figsize=(10, 8))
 TOE_1.plot(ax=ax, levels=levels, cmap='turbo', cbar_kwargs=cbar_kw)
 ax.set_xlim(-83, -67)   # Longitude
@@ -151,9 +160,9 @@ shp_suda.plot(ax=ax, fc='white', edgecolor='gray', linewidth=0.3)
 # --- LABELS ---
 ax.set_xlabel('Longitud')
 ax.set_ylabel('Latitud')
-ax.set_title('Time of Emergence - Umbral bajo (%s, %s, %d-%d)' % (var.upper(), tri.upper(), y_ini, y_end))
+ax.set_title('Time of Emergence - %s (%s, %s, %d-%d)' % (title_1, var.upper(), tri.upper(), y_ini, y_end))
 plt.tight_layout()
-plt.savefig(os.path.join(odir, 'TOE_%s_%s_umbral_bajo.png' % (var, tri)), dpi=100, bbox_inches='tight')
+plt.savefig(os.path.join(odir, 'TOE_%s_%s_%s.png' % (var, tri, name_1)), dpi=100, bbox_inches='tight')
 plt.close()
 
 # PART 4: UNCERTAINTY SPLIT FOR PERU #########################

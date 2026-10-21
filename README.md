@@ -143,9 +143,11 @@ figuras se vuelven a generar siempre (tardan pocos segundos).
 **`out/`** (NetCDF):
 
 - `toe_<var>_<per>.nc` — Time of Emergence
-- `Tmu_<var>_<per>.nc` — fracción de incertidumbre por modelos
-- `Tsu_<var>_<per>.nc` — fracción de incertidumbre por escenarios
-- `Tvi_<var>_<per>.nc` — fracción de incertidumbre por variabilidad interna
+- `Tmu_<var>_<per>.nc` — incertidumbre por modelos (MU)
+- `Tsu_<var>_<per>.nc` — incertidumbre por escenarios (SU)
+- `Tvi_<var>_<per>.nc` — variabilidad interna (VI)
+
+`<per>` es el prefijo del trimestre: `m1` (djf), `m4` (mam), `m7` (jja) o `m10` (son).
 
 **`figures/`** (PNG):
 
@@ -153,6 +155,6 @@ figuras se vuelven a generar siempre (tardan pocos segundos).
 - `Fraccion_incertidumbre_peru_<var>_<tri>_interpol.png` — fracción de cada fuente de
   incertidumbre (2020–2100) promediada en el sur de Perú (17°S–12°S, 75°W–70°W)
 
-Los nombres de archivo de arriba son relativos a las carpetas por defecto (`out/` y `figures/`);
-si pasas otras carpetas como argumento, los resultados se guardan ahí. Los valores por defecto
-están en las variables `idir` y `odir` al inicio de cada script `.py`.
+Si pasas otra carpeta de salida como argumento, los `.nc` se guardan ahí en vez de `out/`; las
+figuras van siempre a `figures/`. Los valores por defecto están en las variables `idir` y `odir`
+al inicio de cada script `.py`.

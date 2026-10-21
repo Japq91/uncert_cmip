@@ -67,8 +67,12 @@ TOE = xr.open_dataset(ofile)['__xarray_dataarray_variable__']
 # t_TOE holds, for each grid point, the year when TOE
 # passes the threshold
 
+# First and last year of the results (taken from the data, e.g. 2020-2100 or 2020-2067)
+y_ini = int(TOE['time.year'][0])
+y_end = int(TOE['time.year'][-1])
+
 t_TOE = TOE * np.nan  # Start with NaN
-tpr = 2020
+tpr = y_ini
 
 for tpru in range(len(TOE.time)):
     t_TOE = t_TOE.where(~((TOE < tpr) & (TOE['time.year'] == tpr)), tpr)
@@ -115,7 +119,7 @@ else:
 
 # --- High threshold map (TOE_2: +2 for tas, +1 for pr) ---
 fig, ax = plt.subplots(figsize=(10, 8))
-TOE_2.plot(ax=ax, levels=np.arange(2020, 2104, 4), cmap='turbo')
+TOE_2.plot(ax=ax, levels=np.arange(y_ini, y_end + 4, 4), cmap='turbo')
 ax.set_xlim(-83, -67)   #
 ax.set_ylim(-19, 0.5)     #
 # --- SHAPEFILES ---
@@ -131,7 +135,7 @@ plt.close()
 
 # --- Low threshold map (TOE_1: +1 for tas, -1 for pr) ---
 fig, ax = plt.subplots(figsize=(10, 8))
-TOE_1.plot(ax=ax, levels=np.arange(2020, 2104, 4), cmap='turbo')
+TOE_1.plot(ax=ax, levels=np.arange(y_ini, y_end + 4, 4), cmap='turbo')
 ax.set_xlim(-83, -67)   # Longitude
 ax.set_ylim(-19, 0.5)     # Latitude
 # --- SHAPEFILES ---
@@ -178,12 +182,12 @@ fig, ax = plt.subplots(1, 1, figsize=(9, 6), sharey=True, sharex=True)
 fig.subplots_adjust(hspace=0.17, wspace=0.05)
 fig.suptitle('PERU', y=0.99, fontsize=18)
 
-ax.stackplot(range(2020, 2101), pmu, psu, pvi, labels=label, colors=color_m)
+ax.stackplot(pmu['time.year'], pmu, psu, pvi, labels=label, colors=color_m)
 ax.set_title(tri.upper(), fontsize=12)
 ax.set_ylabel('Porcentaje de incertidumbre (%)')
 ax.legend(loc='upper left', fontsize=11)
 ax.margins(0, 0)
-ax.set_xlim(2020, 2100)
+ax.set_xlim(y_ini, y_end)
 ax.set_ylim(0, 100)
 
 plt.savefig(os.path.join(odir, 'Fraccion_incertidumbre_peru_%s_%s_interpol.png' % (var, tri)),

@@ -2,6 +2,7 @@
 # DIRECTORIES (defaults; can also be given as arguments 3 and 4)
 idir = 'out'    # Input folder (.nc files made by 01_uncertainty.py)
 odir = 'figures'    # Output folder (.png figures)
+vi_stat = 'std'     # Which results to plot: 'std' or 'var' (can also be given as --vi=std or --vi=var)
 # ============================
 
 import numpy as np
@@ -13,10 +14,17 @@ import os
 
 ############################
 # VARIABLE AND SEASON
-var = sys.argv[1]       # Variable: 'pr' (precipitation) or 'tas' (temperature)
-tri = sys.argv[2]  # Season: 'djf', 'mam', 'jja', 'son', or 'ann' (annual)
-if len(sys.argv) > 3: idir = sys.argv[3]  # Input folder (optional)
-if len(sys.argv) > 4: odir = sys.argv[4]  # Output folder (optional)
+# --vi=std or --vi=var: which results to plot
+for a in sys.argv[1:]:
+    if a.startswith('--vi='): vi_stat = a.split('=', 1)[1]
+args = [a for a in sys.argv[1:] if not a.startswith('--')]
+var = args[0]       # Variable: 'pr' (precipitation) or 'tas' (temperature)
+tri = args[1]  # Season: 'djf', 'mam', 'jja', 'son', or 'ann' (annual)
+if len(args) > 2: idir = args[2]  # Input folder (optional)
+if len(args) > 3: odir = args[3]  # Output folder (optional)
+if vi_stat not in ('std', 'var'):
+    print("ERROR: --vi must be 'std' or 'var', got '%s'." % vi_stat)
+    sys.exit(1)
 
 # SEASON TO FILE PREFIX
 # 'djf' (December-January-February) -> 'm1'
@@ -32,16 +40,17 @@ elif tri == 'ann': per = 'ann'
 print(var, per)
 print("Input folder:  %s" % os.path.abspath(idir))
 print("Output folder: %s" % os.path.abspath(odir))
+print("Internal variability (VI) as: %s" % vi_stat)
 
 os.makedirs(odir, exist_ok=True)
 
 # CHECK INPUT FILES #########################
 # Make sure the input files exist before going on
 archivos_entrada = [
-    os.path.join(idir, 'toe_%s_%s.nc' % (var, per)),
-    os.path.join(idir, 'Tmu_%s_%s.nc' % (var, per)),
-    os.path.join(idir, 'Tsu_%s_%s.nc' % (var, per)),
-    os.path.join(idir, 'Tvi_%s_%s.nc' % (var, per))
+    os.path.join(idir, 'toe_%s_%s_%s.nc' % (var, per, vi_stat)),
+    os.path.join(idir, 'Tmu_%s_%s_%s.nc' % (var, per, vi_stat)),
+    os.path.join(idir, 'Tsu_%s_%s_%s.nc' % (var, per, vi_stat)),
+    os.path.join(idir, 'Tvi_%s_%s_%s.nc' % (var, per, vi_stat))
 ]
 
 for archivo in archivos_entrada:
@@ -62,7 +71,7 @@ plt.rcParams.update({
     'font.size': 12,
 })
 # LOAD TOE DATA #########################
-ofile = os.path.join(idir, 'toe_%s_%s.nc' % (var, per))
+ofile = os.path.join(idir, 'toe_%s_%s_%s.nc' % (var, per, vi_stat))
 TOE = xr.open_dataset(ofile)['__xarray_dataarray_variable__']
 
 # PART 1: BUILD TOE YEAR GRID #########################
@@ -148,9 +157,9 @@ shp_suda.plot(ax=ax, fc='white', edgecolor='gray', linewidth=0.3)
 # --- LABELS ---
 ax.set_xlabel('Longitud')
 ax.set_ylabel('Latitud')
-ax.set_title('Time of Emergence - %s (%s, %s, %d-%d)' % (title_2, var.upper(), tri.upper(), y_ini, y_end))
+ax.set_title('Time of Emergence - %s (%s, %s, %d-%d, VI: %s)' % (title_2, var.upper(), tri.upper(), y_ini, y_end, vi_stat))
 plt.tight_layout()
-plt.savefig(os.path.join(odir, 'TOE_%s_%s_%s.png' % (var, tri, name_2)), dpi=100, bbox_inches='tight')
+plt.savefig(os.path.join(odir, 'TOE_%s_%s_%s_%s.png' % (var, tri, name_2, vi_stat)), dpi=100, bbox_inches='tight')
 plt.close()
 
 # --- TOE_1 map ---
@@ -164,9 +173,9 @@ shp_suda.plot(ax=ax, fc='white', edgecolor='gray', linewidth=0.3)
 # --- LABELS ---
 ax.set_xlabel('Longitud')
 ax.set_ylabel('Latitud')
-ax.set_title('Time of Emergence - %s (%s, %s, %d-%d)' % (title_1, var.upper(), tri.upper(), y_ini, y_end))
+ax.set_title('Time of Emergence - %s (%s, %s, %d-%d, VI: %s)' % (title_1, var.upper(), tri.upper(), y_ini, y_end, vi_stat))
 plt.tight_layout()
-plt.savefig(os.path.join(odir, 'TOE_%s_%s_%s.png' % (var, tri, name_1)), dpi=100, bbox_inches='tight')
+plt.savefig(os.path.join(odir, 'TOE_%s_%s_%s_%s.png' % (var, tri, name_1, vi_stat)), dpi=100, bbox_inches='tight')
 plt.close()
 
 # PART 4: UNCERTAINTY SPLIT FOR PERU #########################
@@ -175,15 +184,15 @@ plt.close()
 
 varn = '__xarray_dataarray_variable__'
 
-mu_perc = xr.open_dataset(os.path.join(idir, 'Tmu_%s_%s.nc' % (var, per)))[varn]\
+mu_perc = xr.open_dataset(os.path.join(idir, 'Tmu_%s_%s_%s.nc' % (var, per, vi_stat)))[varn]\
     .sel(lat=slice(-17, -12), lon=slice(-75, -70))\
     .mean(dim=['lon', 'lat'])
 
-su_perc = xr.open_dataset(os.path.join(idir, 'Tsu_%s_%s.nc' % (var, per)))[varn]\
+su_perc = xr.open_dataset(os.path.join(idir, 'Tsu_%s_%s_%s.nc' % (var, per, vi_stat)))[varn]\
     .sel(lat=slice(-17, -12), lon=slice(-75, -70))\
     .mean(dim=['lon', 'lat'])
 
-vi_perc = xr.open_dataset(os.path.join(idir, 'Tvi_%s_%s.nc' % (var, per)))[varn]\
+vi_perc = xr.open_dataset(os.path.join(idir, 'Tvi_%s_%s_%s.nc' % (var, per, vi_stat)))[varn]\
     .sel(lat=slice(-17, -12), lon=slice(-75, -70))\
     .mean(dim=['lon', 'lat'])
 
@@ -203,7 +212,7 @@ fig.subplots_adjust(hspace=0.17, wspace=0.05)
 fig.suptitle('PERU', y=0.99, fontsize=18)
 
 ax.stackplot(pmu['time.year'], pmu, psu, pvi, labels=label, colors=color_m)
-ax.set_title('%s (%d-%d)' % (tri.upper(), y_ini, y_end), fontsize=12)
+ax.set_title('%s (%d-%d) - VI: %s' % (tri.upper(), y_ini, y_end, vi_stat), fontsize=12)
 ax.set_ylabel('Porcentaje de incertidumbre (%)')
 ax.legend(loc='upper left', fontsize=11)
 ax.margins(0, 0)
@@ -211,6 +220,6 @@ ax.set_xlim(y_ini, y_end)
 ax.set_xticks(year_ticks)
 ax.set_ylim(0, 100)
 
-plt.savefig(os.path.join(odir, 'Fraccion_incertidumbre_peru_%s_%s_interpol.png' % (var, tri)),
+plt.savefig(os.path.join(odir, 'Fraccion_incertidumbre_peru_%s_%s_interpol_%s.png' % (var, tri, vi_stat)),
             dpi=100, bbox_inches='tight')
 plt.close()

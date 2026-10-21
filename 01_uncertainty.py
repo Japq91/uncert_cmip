@@ -7,9 +7,10 @@ odir = 'out'    # Output folder
 ref_ini, ref_end = 1981, 2010   # Reference period for the anomalies
 fut_ini = 2020                  # First year of the results (if the data allows it)
 # ============================
-# INTERNAL VARIABILITY (VI)
-# 'std': standard deviation of the residuals (default)
+# INTERNAL VARIABILITY (VI) (default; can also be given as --vi=std or --vi=var)
+# 'std': standard deviation of the residuals
 # 'var': variance of the residuals (same units as MU and SU, which are variances)
+# Output files end in _std.nc or _var.nc
 vi_stat = 'std'
 # ============================
 
@@ -26,7 +27,10 @@ warnings.filterwarnings("ignore")
 # READ COMMAND LINE ARGUMENTS
 # --force: run the calculation even if the output files already exist
 force = '--force' in sys.argv
-args = [a for a in sys.argv[1:] if a != '--force']
+# --vi=std or --vi=var: how to measure internal variability
+for a in sys.argv[1:]:
+    if a.startswith('--vi='): vi_stat = a.split('=', 1)[1]
+args = [a for a in sys.argv[1:] if not a.startswith('--')]
 var = args[0]       # Variable: 'pr' (precipitation) or 'tas' (temperature)
 tri = args[1]  # Season: 'djf', 'mam', 'jja', 'son', or 'ann' (annual)
 if len(args) > 2: idir = args[2]  # Input folder (optional)
@@ -81,10 +85,10 @@ def polinom(d, var):
 os.makedirs(odir, exist_ok=True)
 
 archivos_salida = [
-    os.path.join(odir, 'toe_%s_%s.nc' % (var, per)),
-    os.path.join(odir, 'Tmu_%s_%s.nc' % (var, per)),
-    os.path.join(odir, 'Tsu_%s_%s.nc' % (var, per)),
-    os.path.join(odir, 'Tvi_%s_%s.nc' % (var, per))
+    os.path.join(odir, 'toe_%s_%s_%s.nc' % (var, per, vi_stat)),
+    os.path.join(odir, 'Tmu_%s_%s_%s.nc' % (var, per, vi_stat)),
+    os.path.join(odir, 'Tsu_%s_%s_%s.nc' % (var, per, vi_stat)),
+    os.path.join(odir, 'Tvi_%s_%s_%s.nc' % (var, per, vi_stat))
 ]
 
 todos_existentes = all(os.path.exists(f) for f in archivos_salida)
@@ -285,8 +289,8 @@ TOE = G / (VI) ** 0.5
 
 # Save results as NetCDF files
 print("Saving output files...")
-TOE.to_netcdf(os.path.join(odir, 'toe_%s_%s.nc' % (var, per)))
-MU.to_netcdf(os.path.join(odir, 'Tmu_%s_%s.nc' % (var, per)))
-SU.to_netcdf(os.path.join(odir, 'Tsu_%s_%s.nc' % (var, per)))
-VI.to_netcdf(os.path.join(odir, 'Tvi_%s_%s.nc' % (var, per)))
+TOE.to_netcdf(os.path.join(odir, 'toe_%s_%s_%s.nc' % (var, per, vi_stat)))
+MU.to_netcdf(os.path.join(odir, 'Tmu_%s_%s_%s.nc' % (var, per, vi_stat)))
+SU.to_netcdf(os.path.join(odir, 'Tsu_%s_%s_%s.nc' % (var, per, vi_stat)))
+VI.to_netcdf(os.path.join(odir, 'Tvi_%s_%s_%s.nc' % (var, per, vi_stat)))
 print("Calculation finished. Results: %d-%d" % (a_ini, y_stop))

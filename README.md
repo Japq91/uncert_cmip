@@ -89,13 +89,14 @@ Analysis period (results): 2020-2064 (45 years)
 
 ### Variabilidad interna: desviación estándar o varianza
 
-Al inicio de `01_uncertainty.py`, la opción `vi_stat` define cómo se mide la variabilidad interna (VI):
+La opción `--vi` de `00_procesa.sh` define cómo se mide la variabilidad interna (VI):
 
-- `'std'` (por defecto): desviación estándar de los residuos.
-- `'var'`: varianza de los residuos, en las mismas unidades que MU y SU, que son varianzas.
+- `--vi=std` (por defecto): desviación estándar de los residuos.
+- `--vi=var`: varianza de los residuos, en las mismas unidades que MU y SU, que son varianzas.
 
-Esto afecta la incertidumbre total, el TOE y el gráfico de fracciones. Si cambias la opción,
-recalcula con `--force`.
+Esto afecta la incertidumbre total, el TOE y el gráfico de fracciones. Los resultados y las figuras
+llevan `_std` o `_var` al final del nombre, así que los dos cálculos pueden convivir en la misma
+carpeta sin pisarse, y los títulos de las figuras indican cuál se usó (`VI: std` o `VI: var`).
 
 Las figuras usan el periodo de los resultados en el título, en la barra de colores de los mapas y
 en el eje horizontal del gráfico de fracciones.
@@ -150,7 +151,7 @@ Sabrás que está activo porque el prompt mostrará `(.venv)` al inicio. Para sa
 Con el entorno activado:
 
 ```bash
-bash 00_procesa.sh <variable>,<trimestre> [carpeta_entrada,carpeta_salida] [--force]
+bash 00_procesa.sh <variable>,<trimestre> [carpeta_entrada,carpeta_salida] [--vi=std|var] [--force]
 ```
 
 | Argumento | Valores | Por defecto |
@@ -159,7 +160,10 @@ bash 00_procesa.sh <variable>,<trimestre> [carpeta_entrada,carpeta_salida] [--fo
 | `trimestre` | `djf`, `mam`, `jja`, `son` o `ann` (anual); ver [Trimestres y anual](#trimestres-y-anual) | obligatorio |
 | `carpeta_entrada` | carpeta con una subcarpeta por trimestre (`djf/`, `jja/`, `ann/`, ...) | `data` |
 | `carpeta_salida` | carpeta para los `.nc` de resultados | `out` |
-| `--force` | recalcula aunque los `.nc` de resultados ya existan (puede ir en cualquier posición) | desactivado |
+| `--vi` | variabilidad interna como desviación estándar (`std`) o varianza (`var`); ver [más abajo](#variabilidad-interna-desviación-estándar-o-varianza) | `std` |
+| `--force` | recalcula aunque los `.nc` de resultados ya existan | desactivado |
+
+Las opciones `--vi` y `--force` pueden ir en cualquier posición.
 
 Las figuras se guardan siempre en `figures/`. Los valores van separados por comas y **sin espacios**
 (`pr,djf`, no `pr, djf`).
@@ -182,6 +186,9 @@ bash 00_procesa.sh pr,ann
 
 # Recalcular aunque ya existan resultados
 bash 00_procesa.sh tas,jja data,out --force
+
+# Variabilidad interna como varianza
+bash 00_procesa.sh pr,djf --vi=var
 ```
 
 Para procesar las cuatro combinaciones:
@@ -213,15 +220,15 @@ También se pueden correr sin `00_procesa.sh`. En ese caso las carpetas se pasan
 y 4; si no se pasan, se usan los valores de `idir` y `odir` al inicio de cada script:
 
 ```bash
-python 01_uncertainty.py <variable> <trimestre> [carpeta_entrada] [carpeta_salida] [--force]
-python 02_grafica.py     <variable> <trimestre> [carpeta_resultados] [carpeta_figuras]
+python 01_uncertainty.py <variable> <trimestre> [carpeta_entrada] [carpeta_salida] [--vi=std|var] [--force]
+python 02_grafica.py     <variable> <trimestre> [carpeta_resultados] [carpeta_figuras] [--vi=std|var]
 ```
 
 Por ejemplo:
 
 ```bash
-python 01_uncertainty.py pr djf datos resultados
-python 02_grafica.py pr djf resultados figures
+python 01_uncertainty.py pr djf datos resultados --vi=var
+python 02_grafica.py pr djf resultados figures --vi=var
 ```
 
 Si `01_uncertainty.py` guardó en otra carpeta que `out/`, hay que indicársela a `02_grafica.py`;
@@ -238,12 +245,12 @@ figuras se vuelven a generar siempre (tardan pocos segundos).
 
 **`out/`** (NetCDF):
 
-- `toe_<var>_<per>.nc` — Time of Emergence
-- `Tmu_<var>_<per>.nc` — incertidumbre por modelos (MU)
-- `Tsu_<var>_<per>.nc` — incertidumbre por escenarios (SU)
-- `Tvi_<var>_<per>.nc` — variabilidad interna (VI)
+- `toe_<var>_<per>_<vi>.nc` — Time of Emergence
+- `Tmu_<var>_<per>_<vi>.nc` — incertidumbre por modelos (MU)
+- `Tsu_<var>_<per>_<vi>.nc` — incertidumbre por escenarios (SU)
+- `Tvi_<var>_<per>_<vi>.nc` — variabilidad interna (VI)
 
-`<per>` es el prefijo del trimestre: `m1` (djf), `m4` (mam), `m7` (jja), `m10` (son) o `ann` (anual).
+`<vi>` es `std` o `var` según la opción `--vi`. `<per>` es el prefijo del trimestre: `m1` (djf), `m4` (mam), `m7` (jja), `m10` (son) o `ann` (anual).
 
 **`figures/`** (PNG):
 
@@ -251,14 +258,14 @@ figuras se vuelven a generar siempre (tardan pocos segundos).
 
   | Variable | Archivo | Umbral | Significado |
   |---|---|---|---|
-  | `pr` | `TOE_pr_<tri>_umbral_positivo.png` | +1 | La precipitación **aumenta** por encima del ruido |
-  | `pr` | `TOE_pr_<tri>_umbral_negativo.png` | −1 | La precipitación **disminuye** por debajo del ruido |
-  | `tas` | `TOE_tas_<tri>_umbral_alto.png` | +2 | Calentamiento de 2 veces el ruido |
-  | `tas` | `TOE_tas_<tri>_umbral_bajo.png` | +1 | Calentamiento de 1 vez el ruido |
+  | `pr` | `TOE_pr_<tri>_umbral_positivo_<vi>.png` | +1 | La precipitación **aumenta** por encima del ruido |
+  | `pr` | `TOE_pr_<tri>_umbral_negativo_<vi>.png` | −1 | La precipitación **disminuye** por debajo del ruido |
+  | `tas` | `TOE_tas_<tri>_umbral_alto_<vi>.png` | +2 | Calentamiento de 2 veces el ruido |
+  | `tas` | `TOE_tas_<tri>_umbral_bajo_<vi>.png` | +1 | Calentamiento de 1 vez el ruido |
 
   Los umbrales son una relación señal/ruido (`TOE = señal / √VI`), no grados ni porcentajes:
   +2 para `tas` significa dos desviaciones estándar de la variabilidad interna, no +2 °C.
-- `Fraccion_incertidumbre_peru_<var>_<tri>_interpol.png` — fracción de cada fuente de
+- `Fraccion_incertidumbre_peru_<var>_<tri>_interpol_<vi>.png` — fracción de cada fuente de
   incertidumbre en el periodo de los resultados, promediada en el sur de Perú
   (17°S–12°S, 75°W–70°W)
 

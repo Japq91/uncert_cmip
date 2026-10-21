@@ -11,25 +11,31 @@
 FDIR="figures"  # Figures folder (.png)
 
 usage() {
-    echo "Usage: bash $0 <variable>,<season> [input_dir,output_dir] [--force]"
+    echo "Usage: bash $0 <variable>,<season> [input_dir,output_dir] [--vi=std|var] [--force]"
     echo "  variable     pr | tas"
     echo "  season       djf | mam | jja | son | ann (annual)"
     echo "  input_dir    folder with <season>/ subfolders   (optional, default: data)"
     echo "  output_dir   folder for the .nc results          (optional, default: out)"
+    echo "  --vi=std     internal variability as standard deviation (default)"
+    echo "  --vi=var     internal variability as variance"
     echo "  --force      recalculate even if the .nc results already exist"
     echo "Example: bash $0 tas,jja"
     echo "Example: bash $0 pr,djf data,out"
     echo "Example: bash $0 pr,djf datos            (only input_dir)"
     echo "Example: bash $0 pr,djf ,resultados      (only output_dir)"
     echo "Example: bash $0 pr,djf data,out --force"
+    echo "Example: bash $0 pr,djf --vi=var"
 }
 
-# --- Read --force (it can go anywhere) ---
+# --- Read options --force and --vi (they can go anywhere) ---
 FORCE=""
+VI="std"
 ARGS=()
 for a in "$@"; do
     if [ "$a" = "--force" ]; then
         FORCE="--force"
+    elif [[ "$a" == --vi=* ]]; then
+        VI="${a#--vi=}"
     elif [[ "$a" == -* ]]; then
         echo "ERROR: Unknown option '$a'."
         usage
@@ -41,7 +47,7 @@ done
 
 # --- Check arguments ---
 if [ ${#ARGS[@]} -lt 1 ] || [ ${#ARGS[@]} -gt 2 ]; then
-    echo "ERROR: Expected 1 or 2 arguments (plus optional --force), got ${#ARGS[@]}."
+    echo "ERROR: Expected 1 or 2 arguments (plus options), got ${#ARGS[@]}."
     usage
     exit 1
 fi
@@ -63,6 +69,11 @@ if [ -n "$EXTRA" ]; then
 fi
 IDIR="${IDIR:-data}"  # Input folder
 ODIR="${ODIR:-out}"   # Output folder (.nc)
+
+case "$VI" in
+    std|var) ;;
+    *) echo "ERROR: --vi must be 'std' or 'var', got '$VI'."; usage; exit 1 ;;
+esac
 
 case "$VAR" in
     pr|tas) ;;
@@ -121,19 +132,19 @@ for script in 01_uncertainty.py 02_grafica.py; do
 done
 
 # --- Run the pipeline ---
-echo "Variable: $VAR | Season: $TRI${FORCE:+ | --force}"
+echo "Variable: $VAR | Season: $TRI | VI: $VI${FORCE:+ | --force}"
 echo "Input: $IDIR/$TRI ($NFILES files) | Output: $ODIR | Figures: $FDIR"
 echo "----------------------------------------"
 
 echo "[1/2] Running 01_uncertainty.py..."
-python 01_uncertainty.py "$VAR" "$TRI" "$IDIR" "$ODIR" $FORCE
+python 01_uncertainty.py "$VAR" "$TRI" "$IDIR" "$ODIR" --vi="$VI" $FORCE
 if [ $? -ne 0 ]; then
     echo "ERROR in 01_uncertainty.py"
     exit 1
 fi
 
 echo "[2/2] Running 02_grafica.py..."
-python 02_grafica.py "$VAR" "$TRI" "$ODIR" "$FDIR"
+python 02_grafica.py "$VAR" "$TRI" "$ODIR" "$FDIR" --vi="$VI"
 if [ $? -ne 0 ]; then
     echo "ERROR in 02_grafica.py"
     exit 1

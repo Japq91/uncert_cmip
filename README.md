@@ -89,38 +89,47 @@ Sabrás que está activo porque el prompt mostrará `(.venv)` al inicio. Para sa
 Con el entorno activado:
 
 ```bash
-bash 00_procesa.sh <variable> <trimestre> [carpeta_entrada] [carpeta_salida] [carpeta_figuras]
+bash 00_procesa.sh <variables> <trimestres> [carpeta_entrada] [carpeta_salida] [carpeta_figuras] [--force]
 ```
 
 | Argumento | Valores | Por defecto |
 |---|---|---|
-| `variable` | `pr` (precipitación) o `tas` (temperatura) | obligatorio |
-| `trimestre` | `djf` (dic-ene-feb), `mam` (mar-abr-may), `jja` (jun-jul-ago) o `son` (sep-oct-nov) | obligatorio |
+| `variables` | `pr` (precipitación) y/o `tas` (temperatura), separadas por comas | obligatorio |
+| `trimestres` | `djf` (dic-ene-feb), `mam` (mar-abr-may), `jja` (jun-jul-ago) y/o `son` (sep-oct-nov), separados por comas | obligatorio |
 | `carpeta_entrada` | carpeta con una subcarpeta por trimestre (`djf/`, `jja/`, ...) | `data` |
 | `carpeta_salida` | carpeta para los `.nc` de resultados | `out` |
 | `carpeta_figuras` | carpeta para las figuras `.png` | `figures` |
+| `--force` | recalcula aunque los `.nc` de resultados ya existan (puede ir en cualquier posición) | desactivado |
 
 Ejemplos:
 
 ```bash
-bash 00_procesa.sh tas jja
+# Una variable y un trimestre
 bash 00_procesa.sh pr djf
+
+# Varias combinaciones a la vez (corre pr-djf, pr-jja, tas-djf y tas-jja)
+bash 00_procesa.sh pr,tas djf,jja
+
+# Con carpetas propias
 bash 00_procesa.sh pr djf data resultados graficos
+
+# Recalcular aunque ya existan resultados
+bash 00_procesa.sh pr,tas djf,jja --force
 ```
 
-Antes de correr, el script revisa los argumentos y se detiene con un mensaje si la variable o el
-trimestre no son válidos, si la carpeta de entrada (o su subcarpeta del trimestre) no existe o no
-tiene archivos, o si alguna carpeta de salida es en realidad un archivo. Las carpetas de salida
-se crean si no existen.
+Las listas van separadas por comas y **sin espacios** (`pr,tas`, no `pr, tas`).
 
-Para procesar las cuatro combinaciones:
+Antes de correr cualquier cálculo, el script revisa todas las combinaciones y se detiene con un
+mensaje si alguna variable o trimestre no es válido, si la carpeta de entrada (o la subcarpeta de
+algún trimestre) no existe o no tiene archivos, si alguna carpeta de salida es en realidad un
+archivo, o si se escribe mal una opción (por ejemplo `--forse`). Las carpetas de salida se crean si
+no existen.
 
-```bash
-for v in pr tas; do for t in djf jja; do bash 00_procesa.sh $v $t; done; done
-```
+### Archivos ya calculados
 
-Si los archivos de la carpeta de salida ya existen, `01_uncertainty.py` omite el cálculo y pasa
-directo a las gráficas. Para recalcular, borra los archivos correspondientes.
+Si los 4 `.nc` de una combinación ya existen en la carpeta de salida, `01_uncertainty.py` omite el
+cálculo y pasa directo a las gráficas. Para recalcular, usa `--force` o borra esos archivos. Las
+figuras se vuelven a generar siempre (tardan pocos segundos).
 
 ## Resultados
 

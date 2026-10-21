@@ -15,10 +15,13 @@ warnings.filterwarnings("ignore")
 
 ############################
 # READ COMMAND LINE ARGUMENTS
-var = sys.argv[1]       # Variable: 'pr' (precipitation) or 'tas' (temperature)
-tri = sys.argv[2]  # Season: 'djf', 'mam', 'jja' or 'son'
-if len(sys.argv) > 3: idir = sys.argv[3]  # Input folder (optional)
-if len(sys.argv) > 4: odir = sys.argv[4]  # Output folder (optional)
+# --force: run the calculation even if the output files already exist
+force = '--force' in sys.argv
+args = [a for a in sys.argv[1:] if a != '--force']
+var = args[0]       # Variable: 'pr' (precipitation) or 'tas' (temperature)
+tri = args[1]  # Season: 'djf', 'mam', 'jja' or 'son'
+if len(args) > 2: idir = args[2]  # Input folder (optional)
+if len(args) > 3: odir = args[3]  # Output folder (optional)
 
 # SEASON TO FILE PREFIX
 # 'djf' (December-January-February) -> 'm1'
@@ -57,7 +60,7 @@ def polinom(d, var):
     return delta0, residuo0
 
 # CHECK EXISTING OUTPUT FILES #########################
-# If the 4 output files already exist, skip the calculation
+# If the 4 output files already exist, skip the calculation (unless --force)
 os.makedirs(odir, exist_ok=True)
 
 archivos_salida = [
@@ -69,12 +72,12 @@ archivos_salida = [
 
 todos_existentes = all(os.path.exists(f) for f in archivos_salida)
 
-if todos_existentes:
+if todos_existentes and not force:
     print("=" * 50)
     print("WARNING: Output files already exist.")
     for f in archivos_salida:
         print("  -> %s" % f)
-    print("Skipping calculation. Delete these files to run it again.")
+    print("Skipping calculation. Delete these files or use --force to run it again.")
     print("=" * 50)
     sys.exit(0)
 

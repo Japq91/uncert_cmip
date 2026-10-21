@@ -36,8 +36,29 @@ Las anomalías se calculan respecto al periodo de referencia **1981–2010** (co
 Los modelos y escenarios se detectan automáticamente a partir de los nombres de archivo en
 `data/<trimestre>/` (formato `<per>_<var>_<modelo>_ssp<XXX>.nc`). Para agregar o quitar uno,
 basta con agregar o borrar sus archivos. Se necesitan al menos 2 escenarios y 2 modelos por escenario.
-Para usar los trimestres `mam` o `son`, crea `data/mam/` (archivos `m4_...`) o `data/son/`
-(archivos `m10_...`) con el mismo formato.
+
+### Trimestres y anual
+
+Cada archivo tiene **un valor por año**, que resume un trimestre o el año completo. Cada periodo
+tiene su subcarpeta en `data/` y su prefijo en los nombres de archivo:
+
+| Opción | Periodo | Carpeta | Prefijo |
+|---|---|---|---|
+| `djf` | diciembre-enero-febrero | `data/djf/` | `m1_` |
+| `mam` | marzo-abril-mayo | `data/mam/` | `m4_` |
+| `jja` | junio-julio-agosto | `data/jja/` | `m7_` |
+| `son` | septiembre-octubre-noviembre | `data/son/` | `m10_` |
+| `ann` | año completo | `data/ann/` | `ann_` |
+
+El valor de cada año no significa lo mismo para las dos variables:
+
+- **Precipitación (`pr`):** es el **acumulado** del periodo, es decir, la lluvia total del
+  trimestre o del año.
+- **Temperatura (`tas`):** es el **promedio** del periodo, es decir, la temperatura media del
+  trimestre o del año.
+
+El cálculo es el mismo en todos los casos. Para `pr` los cambios se expresan en **porcentaje**
+respecto al periodo de referencia, y para `tas` como **diferencia absoluta** (°C).
 
 ### Periodo de los datos
 
@@ -125,8 +146,8 @@ bash 00_procesa.sh <variable>,<trimestre> [carpeta_entrada,carpeta_salida] [--fo
 | Argumento | Valores | Por defecto |
 |---|---|---|
 | `variable` | `pr` (precipitación) o `tas` (temperatura) | obligatorio |
-| `trimestre` | `djf` (dic-ene-feb), `mam` (mar-abr-may), `jja` (jun-jul-ago) o `son` (sep-oct-nov) | obligatorio |
-| `carpeta_entrada` | carpeta con una subcarpeta por trimestre (`djf/`, `jja/`, ...) | `data` |
+| `trimestre` | `djf`, `mam`, `jja`, `son` o `ann` (anual); ver [Trimestres y anual](#trimestres-y-anual) | obligatorio |
+| `carpeta_entrada` | carpeta con una subcarpeta por trimestre (`djf/`, `jja/`, `ann/`, ...) | `data` |
 | `carpeta_salida` | carpeta para los `.nc` de resultados | `out` |
 | `--force` | recalcula aunque los `.nc` de resultados ya existan (puede ir en cualquier posición) | desactivado |
 
@@ -145,6 +166,9 @@ bash 00_procesa.sh pr,djf data,resultados
 # Solo cambiar la carpeta de entrada, o solo la de salida
 bash 00_procesa.sh pr,djf datos
 bash 00_procesa.sh pr,djf ,resultados
+
+# Datos anuales (data/ann/)
+bash 00_procesa.sh pr,ann
 
 # Recalcular aunque ya existan resultados
 bash 00_procesa.sh tas,jja data,out --force
@@ -209,7 +233,7 @@ figuras se vuelven a generar siempre (tardan pocos segundos).
 - `Tsu_<var>_<per>.nc` — incertidumbre por escenarios (SU)
 - `Tvi_<var>_<per>.nc` — variabilidad interna (VI)
 
-`<per>` es el prefijo del trimestre: `m1` (djf), `m4` (mam), `m7` (jja) o `m10` (son).
+`<per>` es el prefijo del trimestre: `m1` (djf), `m4` (mam), `m7` (jja), `m10` (son) o `ann` (anual).
 
 **`figures/`** (PNG):
 

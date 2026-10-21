@@ -13,7 +13,7 @@ FDIR="figures"  # Figures folder (.png)
 usage() {
     echo "Usage: bash $0 <variable>,<season> [input_dir,output_dir] [--force]"
     echo "  variable     pr | tas"
-    echo "  season       djf | mam | jja | son"
+    echo "  season       djf | mam | jja | son | ann (annual)"
     echo "  input_dir    folder with <season>/ subfolders   (optional, default: data)"
     echo "  output_dir   folder for the .nc results          (optional, default: out)"
     echo "  --force      recalculate even if the .nc results already exist"
@@ -74,7 +74,8 @@ case "$TRI" in
     mam) PER="m4" ;;
     jja) PER="m7" ;;
     son) PER="m10" ;;
-    *) echo "ERROR: Season '$TRI' is not valid. Use 'djf', 'mam', 'jja' or 'son'."; usage; exit 1 ;;
+    ann) PER="ann" ;;
+    *) echo "ERROR: Season '$TRI' is not valid. Use 'djf', 'mam', 'jja', 'son' or 'ann'."; usage; exit 1 ;;
 esac
 
 # --- Check input folder ---

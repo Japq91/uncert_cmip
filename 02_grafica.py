@@ -14,7 +14,7 @@ import os
 ############################
 # VARIABLE AND SEASON
 var = sys.argv[1]       # Variable: 'pr' (precipitation) or 'tas' (temperature)
-tri = sys.argv[2]  # Season: 'djf', 'mam', 'jja' or 'son'
+tri = sys.argv[2]  # Season: 'djf', 'mam', 'jja', 'son', or 'ann' (annual)
 if len(sys.argv) > 3: idir = sys.argv[3]  # Input folder (optional)
 if len(sys.argv) > 4: odir = sys.argv[4]  # Output folder (optional)
 
@@ -23,10 +23,12 @@ if len(sys.argv) > 4: odir = sys.argv[4]  # Output folder (optional)
 # 'mam' (March-April-May) -> 'm4'
 # 'jja' (June-July-August) -> 'm7'
 # 'son' (September-October-November) -> 'm10'
+# 'ann' (annual) -> 'ann'
 if tri == 'djf': per = 'm1'
 elif tri == 'mam': per = 'm4'
 elif tri == 'jja': per = 'm7'
 elif tri == 'son': per = 'm10'
+elif tri == 'ann': per = 'ann'
 print(var, per)
 print("Input folder:  %s" % os.path.abspath(idir))
 print("Output folder: %s" % os.path.abspath(odir))

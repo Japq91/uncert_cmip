@@ -23,7 +23,7 @@ warnings.filterwarnings("ignore")
 force = '--force' in sys.argv
 args = [a for a in sys.argv[1:] if a != '--force']
 var = args[0]       # Variable: 'pr' (precipitation) or 'tas' (temperature)
-tri = args[1]  # Season: 'djf', 'mam', 'jja' or 'son'
+tri = args[1]  # Season: 'djf', 'mam', 'jja', 'son', or 'ann' (annual)
 if len(args) > 2: idir = args[2]  # Input folder (optional)
 if len(args) > 3: odir = args[3]  # Output folder (optional)
 
@@ -32,10 +32,12 @@ if len(args) > 3: odir = args[3]  # Output folder (optional)
 # 'mam' (March-April-May) -> 'm4'
 # 'jja' (June-July-August) -> 'm7'
 # 'son' (September-October-November) -> 'm10'
+# 'ann' (annual) -> 'ann'
 if tri == 'djf': per = 'm1'
 elif tri == 'mam': per = 'm4'
 elif tri == 'jja': per = 'm7'
 elif tri == 'son': per = 'm10'
+elif tri == 'ann': per = 'ann'
 print(var, per)
 print("Input folder:  %s" % os.path.abspath(os.path.join(idir, tri)))
 print("Output folder: %s" % os.path.abspath(odir))

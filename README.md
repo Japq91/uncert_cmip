@@ -87,6 +87,16 @@ Analysis period (results): 2020-2064 (45 years)
   años, así que su primer valor aparece 39 años después del inicio. Los datos deben llegar al
   menos hasta ese año.
 
+### Variabilidad interna: desviación estándar o varianza
+
+Al inicio de `01_uncertainty.py`, la opción `vi_stat` define cómo se mide la variabilidad interna (VI):
+
+- `'std'` (por defecto): desviación estándar de los residuos.
+- `'var'`: varianza de los residuos, en las mismas unidades que MU y SU, que son varianzas.
+
+Esto afecta la incertidumbre total, el TOE y el gráfico de fracciones. Si cambias la opción,
+recalcula con `--force`.
+
 Las figuras usan el periodo de los resultados en el título, en la barra de colores de los mapas y
 en el eje horizontal del gráfico de fracciones.
 

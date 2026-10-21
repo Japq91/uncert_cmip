@@ -7,6 +7,11 @@ odir = 'out'    # Output folder
 ref_ini, ref_end = 1981, 2010   # Reference period for the anomalies
 fut_ini = 2020                  # First year of the results (if the data allows it)
 # ============================
+# INTERNAL VARIABILITY (VI)
+# 'std': standard deviation of the residuals (default)
+# 'var': variance of the residuals (same units as MU and SU, which are variances)
+vi_stat = 'std'
+# ============================
 
 import pandas as pd
 import xarray as xr
@@ -40,6 +45,10 @@ elif tri == 'son': per = 'm10'
 elif tri == 'ann': per = 'ann'
 print(var, per)
 print("Input folder:  %s" % os.path.abspath(os.path.join(idir, tri)))
+if vi_stat not in ('std', 'var'):
+    print("ERROR: vi_stat must be 'std' or 'var', got '%s'." % vi_stat)
+    sys.exit(1)
+print("Internal variability (VI) as: %s" % vi_stat)
 print("Output folder: %s" % os.path.abspath(odir))
 
 # FUNCTIONS #########################
@@ -249,7 +258,10 @@ for ktime in range(len(ds['time']) - 30):
 ########## PART 4: SMOOTHING AND PERIOD SELECTION #########
 
 # Sort Internal Variability and set its dates
-VI0 = residuo_45_std.sortby('time', ascending=True)
+if vi_stat == 'var':
+    VI0 = residuo_45_var.sortby('time', ascending=True)
+else:
+    VI0 = residuo_45_std.sortby('time', ascending=True)
 VI0['time'] = pd.date_range(str(y_start + 30), freq='12M', periods=len(VI0.time))
 # 10-year moving average
 VI1 = VI0.rolling(time=10, center=False).mean()

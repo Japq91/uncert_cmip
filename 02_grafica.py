@@ -2,7 +2,7 @@
 # DIRECTORIES (defaults; can also be given as arguments 3 and 4)
 idir = 'out'    # Input folder (.nc files made by 01_uncertainty.py)
 odir = 'figures'    # Output folder (.png figures)
-vi_stat = 'std'     # Which results to plot: 'std' or 'var' (can also be given as --vi=std or --vi=var)
+vi_stat = 'var'     # Which results to plot: 'var' or 'std' (can also be given as --vi=std or --vi=var)
 # ============================
 
 import numpy as np

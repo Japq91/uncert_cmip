@@ -91,8 +91,16 @@ Analysis period (results): 2020-2064 (45 years)
 
 La opción `--vi` de `00_procesa.sh` define cómo se mide la variabilidad interna (VI):
 
-- `--vi=std` (por defecto): desviación estándar de los residuos.
-- `--vi=var`: varianza de los residuos, en las mismas unidades que MU y SU, que son varianzas.
+- `--vi=var` (por defecto): varianza de los residuos.
+- `--vi=std`: desviación estándar de los residuos. Es el método anterior; se mantiene solo para
+  comparar resultados.
+
+Se recomienda `var` porque deja las unidades correctas en los dos usos de la VI:
+
+| | `--vi=var` | `--vi=std` |
+|---|---|---|
+| Fracción de incertidumbre | VI, MU y SU son varianzas | Suma una desviación estándar con dos varianzas |
+| TOE = señal / √VI | señal / desviación estándar | señal / √(desviación estándar), sin sentido físico |
 
 Esto afecta la incertidumbre total, el TOE y el gráfico de fracciones. Los resultados y las figuras
 llevan `_std` o `_var` al final del nombre, así que los dos cálculos pueden convivir en la misma
@@ -160,7 +168,7 @@ bash 00_procesa.sh <variable>,<trimestre> [carpeta_entrada,carpeta_salida] [--vi
 | `trimestre` | `djf`, `mam`, `jja`, `son` o `ann` (anual); ver [Trimestres y anual](#trimestres-y-anual) | obligatorio |
 | `carpeta_entrada` | carpeta con una subcarpeta por trimestre (`djf/`, `jja/`, `ann/`, ...) | `data` |
 | `carpeta_salida` | carpeta para los `.nc` de resultados | `out` |
-| `--vi` | variabilidad interna como desviación estándar (`std`) o varianza (`var`); ver [más abajo](#variabilidad-interna-desviación-estándar-o-varianza) | `std` |
+| `--vi` | variabilidad interna como varianza (`var`) o desviación estándar (`std`); ver [más abajo](#variabilidad-interna-desviación-estándar-o-varianza) | `var` |
 | `--force` | recalcula aunque los `.nc` de resultados ya existan | desactivado |
 
 Las opciones `--vi` y `--force` pueden ir en cualquier posición.
@@ -187,8 +195,8 @@ bash 00_procesa.sh pr,ann
 # Recalcular aunque ya existan resultados
 bash 00_procesa.sh tas,jja data,out --force
 
-# Variabilidad interna como varianza
-bash 00_procesa.sh pr,djf --vi=var
+# Variabilidad interna con el método anterior (desviación estándar), para comparar
+bash 00_procesa.sh pr,djf --vi=std
 ```
 
 Para procesar las cuatro combinaciones:
@@ -227,8 +235,8 @@ python 02_grafica.py     <variable> <trimestre> [carpeta_resultados] [carpeta_fi
 Por ejemplo:
 
 ```bash
-python 01_uncertainty.py pr djf datos resultados --vi=var
-python 02_grafica.py pr djf resultados figures --vi=var
+python 01_uncertainty.py pr djf datos resultados
+python 02_grafica.py pr djf resultados figures
 ```
 
 Si `01_uncertainty.py` guardó en otra carpeta que `out/`, hay que indicársela a `02_grafica.py`;

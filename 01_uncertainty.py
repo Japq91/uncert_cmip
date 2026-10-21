@@ -8,10 +8,11 @@ ref_ini, ref_end = 1981, 2010   # Reference period for the anomalies
 fut_ini = 2020                  # First year of the results (if the data allows it)
 # ============================
 # INTERNAL VARIABILITY (VI) (default; can also be given as --vi=std or --vi=var)
-# 'std': standard deviation of the residuals
-# 'var': variance of the residuals (same units as MU and SU, which are variances)
-# Output files end in _std.nc or _var.nc
-vi_stat = 'std'
+# 'var': variance of the residuals (recommended). Same units as MU and SU (variances),
+#        and TOE = G / sqrt(VI) = signal / standard deviation
+# 'std': standard deviation of the residuals (old method, kept to compare results)
+# Output files end in _var.nc or _std.nc
+vi_stat = 'var'
 # ============================
 
 import pandas as pd

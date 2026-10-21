@@ -5,6 +5,7 @@
 # Runs the full TOE analysis:
 #   1. 01_uncertainty.py  -> uncertainties and TOE
 #   2. 02_grafica.py     -> maps and plots
+#   3. 03_series_modelos.py -> time series of each model (input data)
 # Activate the virtual environment first: source .venv/bin/activate
 # =============================================================================
 
@@ -124,7 +125,7 @@ for d in "$ODIR" "$FDIR"; do
 done
 
 # --- Check that the scripts exist ---
-for script in 01_uncertainty.py 02_grafica.py; do
+for script in 01_uncertainty.py 02_grafica.py 03_series_modelos.py; do
     if [ ! -f "$script" ]; then
         echo "ERROR: '$script' not found"
         exit 1
@@ -136,17 +137,24 @@ echo "Variable: $VAR | Season: $TRI | VI: $VI${FORCE:+ | --force}"
 echo "Input: $IDIR/$TRI ($NFILES files) | Output: $ODIR | Figures: $FDIR"
 echo "----------------------------------------"
 
-echo "[1/2] Running 01_uncertainty.py..."
+echo "[1/3] Running 01_uncertainty.py..."
 python 01_uncertainty.py "$VAR" "$TRI" "$IDIR" "$ODIR" --vi="$VI" $FORCE
 if [ $? -ne 0 ]; then
     echo "ERROR in 01_uncertainty.py"
     exit 1
 fi
 
-echo "[2/2] Running 02_grafica.py..."
+echo "[2/3] Running 02_grafica.py..."
 python 02_grafica.py "$VAR" "$TRI" "$ODIR" "$FDIR" --vi="$VI"
 if [ $? -ne 0 ]; then
     echo "ERROR in 02_grafica.py"
+    exit 1
+fi
+
+echo "[3/3] Running 03_series_modelos.py..."
+python 03_series_modelos.py "$VAR" "$TRI" "$IDIR" "$FDIR"
+if [ $? -ne 0 ]; then
+    echo "ERROR in 03_series_modelos.py"
     exit 1
 fi
 

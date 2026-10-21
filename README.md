@@ -19,7 +19,7 @@ Las anomalías se calculan respecto al periodo de referencia **1981–2010** (co
 ```
 .
 ├── setup_env.sh        # Crea el entorno virtual e instala los paquetes
-├── 00_procesa.sh       # Ejecuta el flujo completo (01 + 02)
+├── 00_procesa.sh       # Ejecuta el flujo completo (01 + 02 + 03)
 ├── 01_uncertainty.py   # Calcula SU, MU, VI y TOE  -> out/
 ├── 02_grafica.py       # Genera mapas y gráficos     -> figures/
 ├── 03_series_modelos.py # Series de tiempo de cada modelo -> figures/
@@ -214,14 +214,16 @@ Las carpetas de salida se crean si no existen.
 
 ### Cómo se conectan las carpetas
 
-`00_procesa.sh` pasa la misma carpeta de salida a los dos scripts: `01_uncertainty.py` guarda ahí
-los `.nc` y `02_grafica.py` los lee desde ahí. Por ejemplo, con
+`00_procesa.sh` pasa la misma carpeta de salida a `01_uncertainty.py` y `02_grafica.py`:
+`01_uncertainty.py` guarda ahí los `.nc` y `02_grafica.py` los lee desde ahí.
+`03_series_modelos.py` usa la misma carpeta de entrada que `01_uncertainty.py`. Por ejemplo, con
 `bash 00_procesa.sh pr,djf datos,resultados`:
 
 | Script | Lee de | Guarda en |
 |---|---|---|
 | `01_uncertainty.py` | `datos/djf/` | `resultados/` |
 | `02_grafica.py` | `resultados/` | `figures/` |
+| `03_series_modelos.py` | `datos/djf/` | `figures/` |
 
 ### Correr los scripts por separado
 
@@ -249,7 +251,8 @@ se hacen las validaciones de `00_procesa.sh`.
 `03_series_modelos.py` grafica los datos de entrada (no los resultados): la serie de tiempo de
 cada modelo, promediada en toda la región (lat y lon, ponderado por cos(lat)). Hace una figura
 por escenario; todas usan el mismo eje Y y el mismo color para cada modelo, para poder
-compararlas. No depende de `01_uncertainty.py` y no se corre desde `00_procesa.sh`.
+compararlas. `00_procesa.sh` lo corre como tercer paso, con la misma carpeta de entrada; no
+depende de los resultados de `01_uncertainty.py`, así que también se puede correr solo:
 
 ```bash
 python 03_series_modelos.py <variable> <trimestre> [carpeta_entrada] [carpeta_figuras]
@@ -295,6 +298,8 @@ figuras se vuelven a generar siempre (tardan pocos segundos).
 - `Fraccion_incertidumbre_peru_<var>_<tri>_interpol_<vi>.png` — fracción de cada fuente de
   incertidumbre en el periodo de los resultados, promediada en el sur de Perú
   (17°S–12°S, 75°W–70°W)
+- `Series_<carpeta>_<var>_<tri>_ssp<XXX>.png` — serie de tiempo de cada modelo, una figura por
+  escenario (ver [Series de tiempo de los modelos](#series-de-tiempo-de-los-modelos))
 
 Si pasas otra carpeta de salida como argumento, los `.nc` se guardan ahí en vez de `out/`; las
 figuras van siempre a `figures/`. Los valores por defecto están en las variables `idir` y `odir`

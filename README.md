@@ -12,7 +12,7 @@ La incertidumbre total de la proyección se separa en tres fuentes:
 | Modelos | MU | Promedio de la varianza entre modelos dentro de cada SSP |
 | Variabilidad interna | VI | Dispersión del residuo respecto a un polinomio de grado 4, en ventanas móviles de 30 años |
 
-Las anomalías se calculan respecto al periodo de referencia **1981–2010**.
+Las anomalías se calculan respecto al periodo de referencia **1981–2010** (configurable en `01_uncertainty.py`).
 
 ## Estructura
 
@@ -38,6 +38,36 @@ Los modelos y escenarios se detectan automáticamente a partir de los nombres de
 basta con agregar o borrar sus archivos. Se necesitan al menos 2 escenarios y 2 modelos por escenario.
 Para usar los trimestres `mam` o `son`, crea `data/mam/` (archivos `m4_...`) o `data/son/`
 (archivos `m10_...`) con el mismo formato.
+
+### Periodo de los datos
+
+Los años se leen de los archivos; no es necesario que lleguen a 2100. Al empezar,
+`01_uncertainty.py` muestra el periodo común a todos los archivos y el periodo de los resultados:
+
+```
+Common period of all files: 1981-2064 (84 years)
+Analysis period (results): 2020-2064 (45 years)
+```
+
+- **Periodo común:** va del año inicial más tardío al año final más temprano de todos los archivos.
+  Todos los archivos se recortan a ese periodo antes del cálculo.
+- **Modelos con otros años:** si algún archivo no tiene los mismos años que la mayoría, el script
+  avisa cuáles son y los recorta al periodo común:
+  ```
+  WARNING: Most files have 1981-2067 (87 years), but these do not:
+    -> m1_pr_GFDL-ESM4_ssp126.nc: 1981-2060 (80 years)
+  All files will be cut to the common period 1981-2060.
+  ```
+- **Años faltantes:** si a un archivo le falta un año en medio de la serie, el script se detiene.
+- **Periodo de referencia:** debe estar dentro del periodo común; si no, el script se detiene. Se
+  cambia en `ref_ini, ref_end` al inicio de `01_uncertainty.py`.
+- **Inicio de los resultados:** es 2020 (`fut_ini`) o, si los datos empiezan más tarde, el año
+  inicial + 39. La variabilidad interna usa ventanas de 30 años y luego una media móvil de 10
+  años, así que su primer valor aparece 39 años después del inicio. Los datos deben llegar al
+  menos hasta ese año.
+
+Las figuras usan el periodo de los resultados en el título, en la barra de colores de los mapas y
+en el eje horizontal del gráfico de fracciones.
 
 ## Instalación
 
@@ -185,7 +215,8 @@ figuras se vuelven a generar siempre (tardan pocos segundos).
 
 - `TOE_<var>_<tri>_umbral_alto.png` y `TOE_<var>_<tri>_umbral_bajo.png` — mapas del TOE
 - `Fraccion_incertidumbre_peru_<var>_<tri>_interpol.png` — fracción de cada fuente de
-  incertidumbre (2020–2100) promediada en el sur de Perú (17°S–12°S, 75°W–70°W)
+  incertidumbre en el periodo de los resultados, promediada en el sur de Perú
+  (17°S–12°S, 75°W–70°W)
 
 Si pasas otra carpeta de salida como argumento, los `.nc` se guardan ahí en vez de `out/`; las
 figuras van siempre a `figures/`. Los valores por defecto están en las variables `idir` y `odir`

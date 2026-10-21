@@ -3,6 +3,10 @@
 idir = 'data'   # Input folder (one subfolder per season: data/<tri>/)
 odir = 'out'    # Output folder
 # ============================
+# PERIODS
+ref_ini, ref_end = 1981, 2010   # Reference period for the anomalies
+fut_ini = 2020                  # First year of the results (if the data allows it)
+# ============================
 
 import pandas as pd
 import xarray as xr
@@ -41,7 +45,7 @@ print("Output folder: %s" % os.path.abspath(odir))
 def polinom(d, var):
     """
     Fit a degree 4 polynomial to the time series and return:
-    - delta: anomaly from the 1981-2010 reference period
+    - delta: anomaly from the reference period (ref_ini-ref_end)
     - residuo: percent difference between the data and the polynomial
     """
     # Polynomial coefficients (degree 4)
@@ -50,8 +54,8 @@ def polinom(d, var):
     s_poli = xr.polyval(coord=d.time, coeffs=coef['%s_polyfit_coefficients' % var])
     # Residual = e(t): percent difference between data and polynomial
     residuo0 = ((d[var] / s_poli) * 100) - 100
-    # Mean of the reference period (1981-2010)
-    prom_PR = s_poli.sel(time=slice('1981', '2010')).mean(dim='time')
+    # Mean of the reference period
+    prom_PR = s_poli.sel(time=slice(str(ref_ini), str(ref_end))).mean(dim='time')
     # Delta: anomaly from the reference period
     if 't' in var:
         # Temperature: absolute difference (degrees)
@@ -100,6 +104,47 @@ if len(scenarios) < 2:
           % (os.path.join(idir, tri), len(scenarios)))
     sys.exit(1)
 
+# CHECK THE YEARS OF EACH FILE #########################
+# All models must cover the same years. We use the period common to all files.
+years_file = {}
+for file in sorted(all_files):
+    yrs = sorted(set(xr.open_dataset(file)['time.year'].values.tolist()))
+    missing = sorted(set(range(yrs[0], yrs[-1] + 1)) - set(yrs))
+    if missing:
+        print("ERROR: %s has missing years: %s" % (os.path.basename(file), missing))
+        sys.exit(1)
+    years_file[file] = (yrs[0], yrs[-1])
+
+y_start = max(a for a, b in years_file.values())  # Latest first year
+y_stop = min(b for a, b in years_file.values())   # Earliest last year
+print("Common period of all files: %d-%d (%d years)" % (y_start, y_stop, y_stop - y_start + 1))
+
+# Warn about files with other years than most files
+periods = list(years_file.values())
+usual = max(set(periods), key=periods.count)  # Period of most files
+odd = [(f, p) for f, p in years_file.items() if p != usual]
+if odd:
+    print("WARNING: Most files have %d-%d (%d years), but these do not:"
+          % (usual[0], usual[1], usual[1] - usual[0] + 1))
+    for file, (a, b) in odd:
+        print("  -> %s: %d-%d (%d years)" % (os.path.basename(file), a, b, b - a + 1))
+    print("All files will be cut to the common period %d-%d." % (y_start, y_stop))
+
+# The reference period must be inside the data
+if y_start > ref_ini or y_stop < ref_end:
+    print("ERROR: The reference period %d-%d is not inside the common period %d-%d."
+          % (ref_ini, ref_end, y_start, y_stop))
+    sys.exit(1)
+
+# First year with results: VI uses a 30-year window and then a 10-year mean,
+# so its first value is y_start + 39
+a_ini = max(fut_ini, y_start + 39)
+if a_ini > y_stop:
+    print("ERROR: Data ends in %d, but results start in %d. Need data until at least %d."
+          % (y_stop, a_ini, a_ini))
+    sys.exit(1)
+print("Analysis period (results): %d-%d (%d years)" % (a_ini, y_stop, y_stop - a_ini + 1))
+
 j=0; k=0
 for n, exp in enumerate(scenarios):
     files = gb(os.path.join(idir, tri, '%s_%s_*_ssp%s.nc' % (per, var, exp)))
@@ -111,7 +156,8 @@ for n, exp in enumerate(scenarios):
     i = 0
     for file in files[:]:
         ds0 = xr.open_dataset(file)
-        ds = ds0[[var]].sortby('lat', ascending=True)  # Make sure latitude goes from south to north
+        ds = ds0[[var]].sel(time=slice(str(y_start), str(y_stop)))  # Common period only
+        ds = ds.sortby('lat', ascending=True)  # Make sure latitude goes from south to north
         delta, residuo = polinom(ds, var)
         if i == 0:
             delta2 = delta
@@ -153,26 +199,26 @@ residuo41 = residuo4.sortby('time', ascending=True)
 
 # G0: mean of all models and all scenarios (climate signal)
 G0 = delta31.groupby('time.year').mean()
-G0['year'] = pd.date_range('1981', freq='12M', periods=len(G0.year))
+G0['year'] = pd.date_range(str(y_start), freq='12M', periods=len(G0.year))
 G0 = G0.rename({'year': 'time'})
 
 # SU: Scenario Uncertainty
 # Variance between the model means of each scenario
 SU0 = prom_mdl_2.groupby('year').var()
-SU0['year'] = pd.date_range('1981', freq='12M', periods=len(SU0.year))
+SU0['year'] = pd.date_range(str(y_start), freq='12M', periods=len(SU0.year))
 SU0 = SU0.rename({'year': 'time'})
 
 # MU: Model Uncertainty
 # Mean of the variance between models in each scenario
 MU0 = var_mdl_2.groupby('year').mean()
-MU0['year'] = pd.date_range('1981', freq='12M', periods=len(MU0.year))
+MU0['year'] = pd.date_range(str(y_start), freq='12M', periods=len(MU0.year))
 MU0 = MU0.rename({'year': 'time'})
 
 ########## PART 3: INTERNAL VARIABILITY (VI) WITH MOVING WINDOWS #########
 
 # Standard deviation of the residual in 30-year windows
 # The window moves one year at a time, giving a VI time series
-year_c = 2010
+year_c = y_start + 29  # Last year of the first window
 l = 0
 for ktime in range(len(ds['time']) - 30):
     y_i = residuo41['time.year'][ktime * k].values
@@ -202,15 +248,15 @@ for ktime in range(len(ds['time']) - 30):
 
 # Sort Internal Variability and set its dates
 VI0 = residuo_45_std.sortby('time', ascending=True)
-VI0['time'] = pd.date_range('2011', freq='12M', periods=len(VI0.time))
+VI0['time'] = pd.date_range(str(y_start + 30), freq='12M', periods=len(VI0.time))
 # 10-year moving average
 VI1 = VI0.rolling(time=10, center=False).mean()
 
-# Keep the common analysis period: 2020-2100
-VI = VI1.sel(time=slice('2020', '2100'))
-G = G0.sel(time=slice('2020', '2100'))
-SU = SU0.sel(time=slice('2020', '2100'))
-MU = MU0.sel(time=slice('2020', '2100'))
+# Keep the analysis period: a_ini to y_stop
+VI = VI1.sel(time=slice(str(a_ini), str(y_stop)))
+G = G0.sel(time=slice(str(a_ini), str(y_stop)))
+SU = SU0.sel(time=slice(str(a_ini), str(y_stop)))
+MU = MU0.sel(time=slice(str(a_ini), str(y_stop)))
 
 ########## PART 5: STN AND TOE, AND SAVE RESULTS #########
 
@@ -229,4 +275,4 @@ TOE.to_netcdf(os.path.join(odir, 'toe_%s_%s.nc' % (var, per)))
 MU.to_netcdf(os.path.join(odir, 'Tmu_%s_%s.nc' % (var, per)))
 SU.to_netcdf(os.path.join(odir, 'Tsu_%s_%s.nc' % (var, per)))
 VI.to_netcdf(os.path.join(odir, 'Tvi_%s_%s.nc' % (var, per)))
-print("Calculation finished.")
+print("Calculation finished. Results: %d-%d" % (a_ini, y_stop))

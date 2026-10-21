@@ -70,6 +70,13 @@ TOE = xr.open_dataset(ofile)['__xarray_dataarray_variable__']
 # First and last year of the results (taken from the data, e.g. 2020-2100 or 2020-2067)
 y_ini = int(TOE['time.year'][0])
 y_end = int(TOE['time.year'][-1])
+print("Results period: %d-%d" % (y_ini, y_end))
+
+# Color levels every 4 years, always ending in y_end
+levels = list(range(y_ini, y_end, 4)) + [y_end]
+# Year labels every 10 years, always showing y_ini and y_end
+year_ticks = list(range(y_ini, y_end - 4, 10)) + [y_end]
+cbar_kw = {'label': 'Year', 'ticks': year_ticks}
 
 t_TOE = TOE * np.nan  # Start with NaN
 tpr = y_ini
@@ -119,7 +126,7 @@ else:
 
 # --- High threshold map (TOE_2: +2 for tas, +1 for pr) ---
 fig, ax = plt.subplots(figsize=(10, 8))
-TOE_2.plot(ax=ax, levels=np.arange(y_ini, y_end + 4, 4), cmap='turbo')
+TOE_2.plot(ax=ax, levels=levels, cmap='turbo', cbar_kwargs=cbar_kw)
 ax.set_xlim(-83, -67)   #
 ax.set_ylim(-19, 0.5)     #
 # --- SHAPEFILES ---
@@ -128,14 +135,14 @@ shp_suda.plot(ax=ax, fc='white', edgecolor='gray', linewidth=0.3)
 # --- LABELS ---
 ax.set_xlabel('Longitud')
 ax.set_ylabel('Latitud')
-ax.set_title('Time of Emergence - Umbral alto (%s, %s)' % (var.upper(), tri.upper()))
+ax.set_title('Time of Emergence - Umbral alto (%s, %s, %d-%d)' % (var.upper(), tri.upper(), y_ini, y_end))
 plt.tight_layout()
 plt.savefig(os.path.join(odir, 'TOE_%s_%s_umbral_alto.png' % (var, tri)), dpi=100, bbox_inches='tight')
 plt.close()
 
 # --- Low threshold map (TOE_1: +1 for tas, -1 for pr) ---
 fig, ax = plt.subplots(figsize=(10, 8))
-TOE_1.plot(ax=ax, levels=np.arange(y_ini, y_end + 4, 4), cmap='turbo')
+TOE_1.plot(ax=ax, levels=levels, cmap='turbo', cbar_kwargs=cbar_kw)
 ax.set_xlim(-83, -67)   # Longitude
 ax.set_ylim(-19, 0.5)     # Latitude
 # --- SHAPEFILES ---
@@ -144,7 +151,7 @@ shp_suda.plot(ax=ax, fc='white', edgecolor='gray', linewidth=0.3)
 # --- LABELS ---
 ax.set_xlabel('Longitud')
 ax.set_ylabel('Latitud')
-ax.set_title('Time of Emergence - Umbral bajo (%s, %s)' % (var.upper(), tri.upper()))
+ax.set_title('Time of Emergence - Umbral bajo (%s, %s, %d-%d)' % (var.upper(), tri.upper(), y_ini, y_end))
 plt.tight_layout()
 plt.savefig(os.path.join(odir, 'TOE_%s_%s_umbral_bajo.png' % (var, tri)), dpi=100, bbox_inches='tight')
 plt.close()
@@ -183,11 +190,12 @@ fig.subplots_adjust(hspace=0.17, wspace=0.05)
 fig.suptitle('PERU', y=0.99, fontsize=18)
 
 ax.stackplot(pmu['time.year'], pmu, psu, pvi, labels=label, colors=color_m)
-ax.set_title(tri.upper(), fontsize=12)
+ax.set_title('%s (%d-%d)' % (tri.upper(), y_ini, y_end), fontsize=12)
 ax.set_ylabel('Porcentaje de incertidumbre (%)')
 ax.legend(loc='upper left', fontsize=11)
 ax.margins(0, 0)
 ax.set_xlim(y_ini, y_end)
+ax.set_xticks(year_ticks)
 ax.set_ylim(0, 100)
 
 plt.savefig(os.path.join(odir, 'Fraccion_incertidumbre_peru_%s_%s_interpol.png' % (var, tri)),

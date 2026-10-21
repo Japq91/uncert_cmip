@@ -74,11 +74,13 @@ y_ini = int(TOE['time.year'][0])
 y_end = int(TOE['time.year'][-1])
 print("Results period: %d-%d" % (y_ini, y_end))
 
-# Color levels every 4 years, always ending in y_end
-levels = list(range(y_ini, y_end, 4)) + [y_end]
+# One color per year: each year goes from y to y+1
+levels = list(range(y_ini, y_end + 2))
 # Year labels every 10 years, always showing y_ini and y_end
 year_ticks = list(range(y_ini, y_end - 4, 10)) + [y_end]
-cbar_kw = {'label': 'Year', 'ticks': year_ticks}
+# Colorbar: 75% of the panel height, labels in the middle of each year color
+cbar_kw = {'label': 'Year', 'shrink': 0.75,
+           'ticks': [t + 0.5 for t in year_ticks], 'format': lambda x, pos: '%d' % x}
 
 t_TOE = TOE * np.nan  # Start with NaN
 tpr = y_ini

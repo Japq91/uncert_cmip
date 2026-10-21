@@ -132,6 +132,38 @@ si la carpeta de entrada (o su subcarpeta del trimestre) no existe o no tiene ar
 carpeta de salida es en realidad un archivo, o si se escribe mal una opción (por ejemplo `--forse`).
 Las carpetas de salida se crean si no existen.
 
+### Cómo se conectan las carpetas
+
+`00_procesa.sh` pasa la misma carpeta de salida a los dos scripts: `01_uncertainty.py` guarda ahí
+los `.nc` y `02_grafica.py` los lee desde ahí. Por ejemplo, con
+`bash 00_procesa.sh pr,djf datos,resultados`:
+
+| Script | Lee de | Guarda en |
+|---|---|---|
+| `01_uncertainty.py` | `datos/djf/` | `resultados/` |
+| `02_grafica.py` | `resultados/` | `figures/` |
+
+### Correr los scripts por separado
+
+También se pueden correr sin `00_procesa.sh`. En ese caso las carpetas se pasan como argumentos 3
+y 4; si no se pasan, se usan los valores de `idir` y `odir` al inicio de cada script:
+
+```bash
+python 01_uncertainty.py <variable> <trimestre> [carpeta_entrada] [carpeta_salida] [--force]
+python 02_grafica.py     <variable> <trimestre> [carpeta_resultados] [carpeta_figuras]
+```
+
+Por ejemplo:
+
+```bash
+python 01_uncertainty.py pr djf datos resultados
+python 02_grafica.py pr djf resultados figures
+```
+
+Si `01_uncertainty.py` guardó en otra carpeta que `out/`, hay que indicársela a `02_grafica.py`;
+si no, la buscará en `out/` y avisará que no encuentra los archivos. Al correrlos por separado no
+se hacen las validaciones de `00_procesa.sh`.
+
 ### Archivos ya calculados
 
 Si los 4 `.nc` de una combinación ya existen en la carpeta de salida, `01_uncertainty.py` omite el

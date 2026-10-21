@@ -22,6 +22,7 @@ Las anomalías se calculan respecto al periodo de referencia **1981–2010** (co
 ├── 00_procesa.sh       # Ejecuta el flujo completo (01 + 02)
 ├── 01_uncertainty.py   # Calcula SU, MU, VI y TOE  -> out/
 ├── 02_grafica.py       # Genera mapas y gráficos     -> figures/
+├── 03_series_modelos.py # Series de tiempo de cada modelo -> figures/
 ├── Clase.ipynb         # Versión paso a paso del análisis (notebook)
 ├── uncert_2026.ppt     # Presentación
 ├── data/
@@ -242,6 +243,24 @@ python 02_grafica.py pr djf resultados figures
 Si `01_uncertainty.py` guardó en otra carpeta que `out/`, hay que indicársela a `02_grafica.py`;
 si no, la buscará en `out/` y avisará que no encuentra los archivos. Al correrlos por separado no
 se hacen las validaciones de `00_procesa.sh`.
+
+### Series de tiempo de los modelos
+
+`03_series_modelos.py` grafica los datos de entrada (no los resultados): la serie de tiempo de
+cada modelo, promediada en toda la región (lat y lon, ponderado por cos(lat)). Hace una figura
+por escenario; todas usan el mismo eje Y y el mismo color para cada modelo, para poder
+compararlas. No depende de `01_uncertainty.py` y no se corre desde `00_procesa.sh`.
+
+```bash
+python 03_series_modelos.py <variable> <trimestre> [carpeta_entrada] [carpeta_figuras]
+python 03_series_modelos.py pr djf                # data/djf -> figures/
+python 03_series_modelos.py tas jja datos figures # datos/jja -> figures/
+```
+
+Las figuras se llaman `Series_<carpeta>_<var>_<tri>_ssp<XXX>.png`, donde `<carpeta>` es el nombre
+de la carpeta de entrada (`data`, `datos`, ...), para distinguir figuras de datos distintos. La
+leyenda usa el nombre del modelo que está entre `_` en el nombre del archivo
+(`m1_pr_ACCESS-CM2_ssp126.nc` -> `ACCESS-CM2`).
 
 ### Archivos ya calculados
 

@@ -147,7 +147,7 @@ else:
     name_1, title_1 = 'umbral_bajo', 'Umbral bajo (+1)'
 
 # --- TOE_2 map ---
-fig, ax = plt.subplots(figsize=(10, 8))
+fig, ax = plt.subplots(figsize=(6, 8))
 TOE_2.plot(ax=ax, levels=levels, cmap='turbo', cbar_kwargs=cbar_kw)
 ax.set_xlim(-83, -67)   #
 ax.set_ylim(-19, 0.5)     #
@@ -163,7 +163,7 @@ plt.savefig(os.path.join(odir, 'TOE_%s_%s_%s_%s.png' % (var, tri, name_2, vi_sta
 plt.close()
 
 # --- TOE_1 map ---
-fig, ax = plt.subplots(figsize=(10, 8))
+fig, ax = plt.subplots(figsize=(6, 8))
 TOE_1.plot(ax=ax, levels=levels, cmap='turbo', cbar_kwargs=cbar_kw)
 ax.set_xlim(-83, -67)   # Longitude
 ax.set_ylim(-19, 0.5)     # Latitude

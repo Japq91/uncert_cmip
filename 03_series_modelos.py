@@ -95,7 +95,7 @@ else:
 
 # ONE FIGURE PER SCENARIO #########################
 for e in scenarios:
-    fig, ax = plt.subplots(figsize=(7.5, 3.6))
+    fig, ax = plt.subplots(figsize=(6, 3))
     for mdl in models:
         if mdl not in series[e]:
             continue

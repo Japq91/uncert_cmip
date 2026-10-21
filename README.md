@@ -89,41 +89,48 @@ Sabrás que está activo porque el prompt mostrará `(.venv)` al inicio. Para sa
 Con el entorno activado:
 
 ```bash
-bash 00_procesa.sh <variables> <trimestres> [carpeta_entrada] [carpeta_salida] [carpeta_figuras] [--force]
+bash 00_procesa.sh <variable>,<trimestre> [carpeta_entrada,carpeta_salida] [--force]
 ```
 
 | Argumento | Valores | Por defecto |
 |---|---|---|
-| `variables` | `pr` (precipitación) y/o `tas` (temperatura), separadas por comas | obligatorio |
-| `trimestres` | `djf` (dic-ene-feb), `mam` (mar-abr-may), `jja` (jun-jul-ago) y/o `son` (sep-oct-nov), separados por comas | obligatorio |
+| `variable` | `pr` (precipitación) o `tas` (temperatura) | obligatorio |
+| `trimestre` | `djf` (dic-ene-feb), `mam` (mar-abr-may), `jja` (jun-jul-ago) o `son` (sep-oct-nov) | obligatorio |
 | `carpeta_entrada` | carpeta con una subcarpeta por trimestre (`djf/`, `jja/`, ...) | `data` |
 | `carpeta_salida` | carpeta para los `.nc` de resultados | `out` |
-| `carpeta_figuras` | carpeta para las figuras `.png` | `figures` |
 | `--force` | recalcula aunque los `.nc` de resultados ya existan (puede ir en cualquier posición) | desactivado |
+
+Las figuras se guardan siempre en `figures/`. Los valores van separados por comas y **sin espacios**
+(`pr,djf`, no `pr, djf`).
 
 Ejemplos:
 
 ```bash
-# Una variable y un trimestre
-bash 00_procesa.sh pr djf
-
-# Varias combinaciones a la vez (corre pr-djf, pr-jja, tas-djf y tas-jja)
-bash 00_procesa.sh pr,tas djf,jja
+# Carpetas por defecto (data y out)
+bash 00_procesa.sh pr,djf
 
 # Con carpetas propias
-bash 00_procesa.sh pr djf data resultados graficos
+bash 00_procesa.sh pr,djf data,resultados
+
+# Solo cambiar la carpeta de entrada, o solo la de salida
+bash 00_procesa.sh pr,djf datos
+bash 00_procesa.sh pr,djf ,resultados
 
 # Recalcular aunque ya existan resultados
-bash 00_procesa.sh pr,tas djf,jja --force
+bash 00_procesa.sh tas,jja data,out --force
 ```
 
-Las listas van separadas por comas y **sin espacios** (`pr,tas`, no `pr, tas`).
+Para procesar las cuatro combinaciones:
 
-Antes de correr cualquier cálculo, el script revisa todas las combinaciones y se detiene con un
-mensaje si alguna variable o trimestre no es válido, si la carpeta de entrada (o la subcarpeta de
-algún trimestre) no existe o no tiene archivos, si alguna carpeta de salida es en realidad un
-archivo, o si se escribe mal una opción (por ejemplo `--forse`). Las carpetas de salida se crean si
-no existen.
+```bash
+for v in pr tas; do for t in djf jja; do bash 00_procesa.sh $v,$t; done; done
+```
+
+Antes de correr, el script revisa los argumentos y se detiene con un mensaje si la variable o el
+trimestre no son válidos, si el formato no es el esperado (por ejemplo `pr djf` en vez de `pr,djf`),
+si la carpeta de entrada (o su subcarpeta del trimestre) no existe o no tiene archivos, si alguna
+carpeta de salida es en realidad un archivo, o si se escribe mal una opción (por ejemplo `--forse`).
+Las carpetas de salida se crean si no existen.
 
 ### Archivos ya calculados
 

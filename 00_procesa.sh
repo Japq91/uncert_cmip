@@ -8,17 +8,20 @@
 # Activate the virtual environment first: source .venv/bin/activate
 # =============================================================================
 
+FDIR="figures"  # Figures folder (.png)
+
 usage() {
-    echo "Usage: bash $0 <variables> <seasons> [input_dir] [output_dir] [figures_dir] [--force]"
-    echo "  variables    pr | tas            (comma list allowed: pr,tas)"
-    echo "  seasons      djf | mam | jja | son  (comma list allowed: djf,jja)"
-    echo "  input_dir    folder with <season>/ subfolders   (default: data)"
-    echo "  output_dir   folder for the .nc results          (default: out)"
-    echo "  figures_dir  folder for the .png figures         (default: figures)"
+    echo "Usage: bash $0 <variable>,<season> [input_dir,output_dir] [--force]"
+    echo "  variable     pr | tas"
+    echo "  season       djf | mam | jja | son"
+    echo "  input_dir    folder with <season>/ subfolders   (optional, default: data)"
+    echo "  output_dir   folder for the .nc results          (optional, default: out)"
     echo "  --force      recalculate even if the .nc results already exist"
-    echo "Example: bash $0 tas jja"
-    echo "Example: bash $0 pr,tas djf,jja"
-    echo "Example: bash $0 pr djf data out figures --force"
+    echo "Example: bash $0 tas,jja"
+    echo "Example: bash $0 pr,djf data,out"
+    echo "Example: bash $0 pr,djf datos            (only input_dir)"
+    echo "Example: bash $0 pr,djf ,resultados      (only output_dir)"
+    echo "Example: bash $0 pr,djf data,out --force"
 }
 
 # --- Read --force (it can go anywhere) ---
@@ -37,71 +40,60 @@ for a in "$@"; do
 done
 
 # --- Check arguments ---
-if [ ${#ARGS[@]} -lt 2 ] || [ ${#ARGS[@]} -gt 5 ]; then
-    echo "ERROR: Expected 2 to 5 arguments (plus optional --force), got ${#ARGS[@]}."
+if [ ${#ARGS[@]} -lt 1 ] || [ ${#ARGS[@]} -gt 2 ]; then
+    echo "ERROR: Expected 1 or 2 arguments (plus optional --force), got ${#ARGS[@]}."
     usage
     exit 1
 fi
 
-IFS=',' read -ra VARS <<< "${ARGS[0]}"  # Variables: "pr", "tas"
-IFS=',' read -ra TRIS <<< "${ARGS[1]}"  # Seasons: "djf", "mam", "jja", "son"
-IDIR="${ARGS[2]:-data}"     # Input folder
-ODIR="${ARGS[3]:-out}"      # Output folder (.nc)
-FDIR="${ARGS[4]:-figures}"  # Figures folder (.png)
-
-if [ ${#VARS[@]} -eq 0 ] || [ ${#TRIS[@]} -eq 0 ]; then
-    echo "ERROR: Variable and season can not be empty."
+# First argument: variable,season
+IFS=',' read -r VAR TRI EXTRA <<< "${ARGS[0]}"
+if [ -z "$VAR" ] || [ -z "$TRI" ] || [ -n "$EXTRA" ]; then
+    echo "ERROR: First argument must be <variable>,<season> (for example pr,djf), got '${ARGS[0]}'."
     usage
     exit 1
 fi
 
-# Season to file prefix
-season_prefix() {
-    case "$1" in
-        djf) echo "m1" ;;
-        mam) echo "m4" ;;
-        jja) echo "m7" ;;
-        son) echo "m10" ;;
-    esac
-}
+# Second argument (optional): input_dir,output_dir
+IFS=',' read -r IDIR ODIR EXTRA <<< "${ARGS[1]}"
+if [ -n "$EXTRA" ]; then
+    echo "ERROR: Second argument must be <input_dir>,<output_dir>, got '${ARGS[1]}'."
+    usage
+    exit 1
+fi
+IDIR="${IDIR:-data}"  # Input folder
+ODIR="${ODIR:-out}"   # Output folder (.nc)
 
-for VAR in "${VARS[@]}"; do
-    case "$VAR" in
-        pr|tas) ;;
-        *) echo "ERROR: Variable '$VAR' is not valid. Use 'pr' or 'tas'."; usage; exit 1 ;;
-    esac
-done
+case "$VAR" in
+    pr|tas) ;;
+    *) echo "ERROR: Variable '$VAR' is not valid. Use 'pr' or 'tas'."; usage; exit 1 ;;
+esac
 
-for TRI in "${TRIS[@]}"; do
-    if [ -z "$(season_prefix "$TRI")" ]; then
-        echo "ERROR: Season '$TRI' is not valid. Use 'djf', 'mam', 'jja' or 'son'."
-        usage
-        exit 1
-    fi
-done
+case "$TRI" in
+    djf) PER="m1" ;;
+    mam) PER="m4" ;;
+    jja) PER="m7" ;;
+    son) PER="m10" ;;
+    *) echo "ERROR: Season '$TRI' is not valid. Use 'djf', 'mam', 'jja' or 'son'."; usage; exit 1 ;;
+esac
 
-# --- Check input folder (all combinations, before running anything) ---
+# --- Check input folder ---
 if [ ! -d "$IDIR" ]; then
     echo "ERROR: Input folder '$IDIR' does not exist."
     exit 1
 fi
-for TRI in "${TRIS[@]}"; do
-    if [ ! -d "$IDIR/$TRI" ]; then
-        echo "ERROR: Folder '$IDIR/$TRI' does not exist."
-        echo "Subfolders found in '$IDIR':"
-        SUBS=$(ls -d "$IDIR"/*/ 2>/dev/null)
-        if [ -n "$SUBS" ]; then echo "$SUBS" | sed 's/^/  /'; else echo "  (none)"; fi
-        exit 1
-    fi
-    PER=$(season_prefix "$TRI")
-    for VAR in "${VARS[@]}"; do
-        NFILES=$(ls "$IDIR/$TRI"/${PER}_${VAR}_*_ssp*.nc 2>/dev/null | wc -l)
-        if [ "$NFILES" -eq 0 ]; then
-            echo "ERROR: No files like '${PER}_${VAR}_<model>_ssp<XXX>.nc' in '$IDIR/$TRI'."
-            exit 1
-        fi
-    done
-done
+if [ ! -d "$IDIR/$TRI" ]; then
+    echo "ERROR: Folder '$IDIR/$TRI' does not exist."
+    echo "Subfolders found in '$IDIR':"
+    SUBS=$(ls -d "$IDIR"/*/ 2>/dev/null)
+    if [ -n "$SUBS" ]; then echo "$SUBS" | sed 's/^/  /'; else echo "  (none)"; fi
+    exit 1
+fi
+NFILES=$(ls "$IDIR/$TRI"/${PER}_${VAR}_*_ssp*.nc 2>/dev/null | wc -l)
+if [ "$NFILES" -eq 0 ]; then
+    echo "ERROR: No files like '${PER}_${VAR}_<model>_ssp<XXX>.nc' in '$IDIR/$TRI'."
+    exit 1
+fi
 
 # --- Check output folders (create them if needed) ---
 for d in "$ODIR" "$FDIR"; do
@@ -127,29 +119,24 @@ for script in 01_uncertainty.py 02_grafica.py; do
     fi
 done
 
-# --- Run the pipeline for each variable and season ---
-for VAR in "${VARS[@]}"; do
-    for TRI in "${TRIS[@]}"; do
-        echo "========================================"
-        echo "Variable: $VAR | Season: $TRI${FORCE:+ | --force}"
-        echo "Input: $IDIR/$TRI | Output: $ODIR | Figures: $FDIR"
-        echo "----------------------------------------"
+# --- Run the pipeline ---
+echo "Variable: $VAR | Season: $TRI${FORCE:+ | --force}"
+echo "Input: $IDIR/$TRI ($NFILES files) | Output: $ODIR | Figures: $FDIR"
+echo "----------------------------------------"
 
-        echo "[1/2] Running 01_uncertainty.py..."
-        python 01_uncertainty.py "$VAR" "$TRI" "$IDIR" "$ODIR" $FORCE
-        if [ $? -ne 0 ]; then
-            echo "ERROR in 01_uncertainty.py ($VAR $TRI)"
-            exit 1
-        fi
+echo "[1/2] Running 01_uncertainty.py..."
+python 01_uncertainty.py "$VAR" "$TRI" "$IDIR" "$ODIR" $FORCE
+if [ $? -ne 0 ]; then
+    echo "ERROR in 01_uncertainty.py"
+    exit 1
+fi
 
-        echo "[2/2] Running 02_grafica.py..."
-        python 02_grafica.py "$VAR" "$TRI" "$ODIR" "$FDIR"
-        if [ $? -ne 0 ]; then
-            echo "ERROR in 02_grafica.py ($VAR $TRI)"
-            exit 1
-        fi
-    done
-done
+echo "[2/2] Running 02_grafica.py..."
+python 02_grafica.py "$VAR" "$TRI" "$ODIR" "$FDIR"
+if [ $? -ne 0 ]; then
+    echo "ERROR in 02_grafica.py"
+    exit 1
+fi
 
-echo "========================================"
-echo "Pipeline finished: ${VARS[*]} x ${TRIS[*]}"
+echo "----------------------------------------"
+echo "Pipeline finished: $VAR $TRI"

@@ -33,6 +33,8 @@ elif tri == 'mam': per = 'm4'
 elif tri == 'jja': per = 'm7'
 elif tri == 'son': per = 'm10'
 print(var, per)
+print("Input folder:  %s" % os.path.abspath(os.path.join(idir, tri)))
+print("Output folder: %s" % os.path.abspath(odir))
 
 # FUNCTIONS #########################
 

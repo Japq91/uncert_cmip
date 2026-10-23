@@ -12,6 +12,7 @@ odir = 'figures'    # Output folder (.png figures)
 
 import numpy as np
 import xarray as xr
+import pandas as pd
 import matplotlib.pyplot as plt
 from glob import glob as gb
 import os
@@ -100,7 +101,7 @@ for e in scenarios:
         if mdl not in series[e]:
             continue
         s = series[e][mdl]
-        ax.plot(s['time.year'], s, color=colores[mdl], lw=1.1, label=mdl)
+        ax.plot(s['time.year'], s, color=colores[mdl], lw=0.6, marker='o', ms=1.8, label=mdl)
     years = np.concatenate([s['time.year'].values for s in series[e].values()])
     ax.set_xlim(years.min(), years.max())
     # Year labels: first year, then every 20 years (not too close to the first one)
@@ -118,4 +119,14 @@ for e in scenarios:
     ofile = os.path.join(odir, 'Series_%s_%s_%s_ssp%s.png' % (carpeta, var, tri, e))
     fig.savefig(ofile, dpi=300, bbox_inches='tight')
     plt.close(fig)
+    print("Saved: %s" % ofile)
+
+    # SUMMARY TABLE (df.describe() of each model) #########################
+    df = pd.DataFrame({mdl: series[e][mdl].to_series().reset_index(drop=True)
+                       for mdl in models if mdl in series[e]})
+    desc = df.describe().T
+    desc.index.name = 'modelo'
+    print(desc.round(2).to_string())
+    ofile = os.path.join(odir, 'Series_%s_%s_%s_ssp%s_describe.csv' % (carpeta, var, tri, e))
+    desc.to_csv(ofile, float_format='%.4f')
     print("Saved: %s" % ofile)

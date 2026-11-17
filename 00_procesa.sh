@@ -13,7 +13,7 @@ FDIR="figures"  # Figures folder (.png)
 
 usage() {
     echo "Usage: bash $0 <variable>,<season> [input_dir,output_dir] [--vi=std|var] [--force]"
-    echo "  variable     pr | tas"
+    echo "  variable     pr | tas | tasmax | tasmin"
     echo "  season       djf | mam | jja | son | ann (annual)"
     echo "  input_dir    folder with <season>/ subfolders   (optional, default: data)"
     echo "  output_dir   folder for the .nc results          (optional, default: out)"
@@ -21,6 +21,7 @@ usage() {
     echo "  --vi=std     internal variability as standard deviation (old method)"
     echo "  --force      recalculate even if the .nc results already exist"
     echo "Example: bash $0 tas,jja"
+    echo "Example: bash $0 tasmin,jja"
     echo "Example: bash $0 pr,djf data,out"
     echo "Example: bash $0 pr,djf datos            (only input_dir)"
     echo "Example: bash $0 pr,djf ,resultados      (only output_dir)"
@@ -77,8 +78,8 @@ case "$VI" in
 esac
 
 case "$VAR" in
-    pr|tas) ;;
-    *) echo "ERROR: Variable '$VAR' is not valid. Use 'pr' or 'tas'."; usage; exit 1 ;;
+    pr|tas|tasmax|tasmin) ;;
+    *) echo "ERROR: Variable '$VAR' is not valid. Use 'pr', 'tas', 'tasmax' or 'tasmin'."; usage; exit 1 ;;
 esac
 
 case "$TRI" in

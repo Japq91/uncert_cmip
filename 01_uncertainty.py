@@ -32,7 +32,7 @@ force = '--force' in sys.argv
 for a in sys.argv[1:]:
     if a.startswith('--vi='): vi_stat = a.split('=', 1)[1]
 args = [a for a in sys.argv[1:] if not a.startswith('--')]
-var = args[0]       # Variable: 'pr' (precipitation) or 'tas' (temperature)
+var = args[0]       # Variable: 'pr' (precipitation), 'tas', 'tasmax' or 'tasmin' (temperature)
 tri = args[1]  # Season: 'djf', 'mam', 'jja', 'son', or 'ann' (annual)
 if len(args) > 2: idir = args[2]  # Input folder (optional)
 if len(args) > 3: odir = args[3]  # Output folder (optional)
@@ -49,6 +49,12 @@ elif tri == 'jja': per = 'm7'
 elif tri == 'son': per = 'm10'
 elif tri == 'ann': per = 'ann'
 print(var, per)
+# Temperature variables: changes in degrees. Precipitation: changes in percent.
+temp_vars = ('tas', 'tasmax', 'tasmin')
+if var != 'pr' and var not in temp_vars:
+    print("ERROR: variable must be pr, tas, tasmax or tasmin, got '%s'." % var)
+    sys.exit(1)
+es_temp = var in temp_vars
 print("Input folder:  %s" % os.path.abspath(os.path.join(idir, tri)))
 if vi_stat not in ('std', 'var'):
     print("ERROR: vi_stat must be 'std' or 'var', got '%s'." % vi_stat)
@@ -62,22 +68,25 @@ def polinom(d, var):
     """
     Fit a degree 4 polynomial to the time series and return:
     - delta: anomaly from the reference period (ref_ini-ref_end)
-    - residuo: percent difference between the data and the polynomial
+    - residuo: difference between the data and the polynomial
+    Temperature (tas, tasmax, tasmin): both in degrees (absolute difference).
+      A percent residual is not used: tasmin can be near or below 0 degC
+      (Andes in winter) and the division by the polynomial would blow up.
+    Precipitation (pr): both in percent.
     """
     # Polynomial coefficients (degree 4)
     coef = d.polyfit(dim='time', deg=4, full=True)
     # Fitted polynomial series
     s_poli = xr.polyval(coord=d.time, coeffs=coef['%s_polyfit_coefficients' % var])
-    # Residual = e(t): percent difference between data and polynomial
-    residuo0 = ((d[var] / s_poli) * 100) - 100
     # Mean of the reference period
     prom_PR = s_poli.sel(time=slice(str(ref_ini), str(ref_end))).mean(dim='time')
-    # Delta: anomaly from the reference period
-    if 't' in var:
-        # Temperature: absolute difference (degrees)
-        delta0 = s_poli - ((s_poli / s_poli) * prom_PR)
+    if es_temp:
+        # Temperature: absolute differences (degrees)
+        residuo0 = d[var] - s_poli          # Residual = e(t)
+        delta0 = s_poli - prom_PR           # Delta: anomaly from the reference period
     else:
-        # Precipitation: percent difference
+        # Precipitation: percent differences
+        residuo0 = ((d[var] / s_poli) * 100) - 100
         delta0 = ((s_poli / prom_PR) * 100) - 100
     return delta0, residuo0
 

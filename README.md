@@ -1,7 +1,8 @@
 # uncert_cmip
 
 Descomposición de la incertidumbre en las proyecciones climáticas CMIP6 y cálculo del
-**Time of Emergence (TOE)** para precipitación (`pr`) y temperatura (`tas`) sobre Sudamérica,
+**Time of Emergence (TOE)** para precipitación (`pr`) y temperatura media, máxima y mínima
+(`tas`, `tasmax`, `tasmin`) sobre Sudamérica,
 con énfasis en Perú.
 
 La incertidumbre total de la proyección se separa en tres fuentes:
@@ -55,11 +56,18 @@ El valor de cada año no significa lo mismo para las dos variables:
 
 - **Precipitación (`pr`):** es el **acumulado** del periodo, es decir, la lluvia total del
   trimestre o del año.
-- **Temperatura (`tas`):** es el **promedio** del periodo, es decir, la temperatura media del
-  trimestre o del año.
+- **Temperatura (`tas`, `tasmax`, `tasmin`):** es el **promedio** del periodo, es decir, la
+  temperatura media, máxima o mínima promedio del trimestre o del año.
 
-El cálculo es el mismo en todos los casos. Para `pr` los cambios se expresan en **porcentaje**
-respecto al periodo de referencia, y para `tas` como **diferencia absoluta** (°C).
+El cálculo es el mismo en todos los casos. Para `pr` la señal (delta) y el residuo respecto al
+polinomio se expresan en **porcentaje**; para `tas`, `tasmax` y `tasmin`, como **diferencia
+absoluta** (°C). Así la señal y la variabilidad interna quedan en las mismas unidades y el TOE no
+depende del valor absoluto de la temperatura. Un residuo en porcentaje no sirve para temperatura:
+`tasmin` puede estar cerca o por debajo de 0 °C (Andes en invierno) y la división se dispara.
+
+> **Nota:** hasta noviembre de 2026 el residuo de `tas` se calculaba en porcentaje. Los resultados
+> de `tas` calculados antes de ese cambio no son comparables con los nuevos; recalcúlalos con
+> `--force`.
 
 ### Periodo de los datos
 
@@ -165,7 +173,7 @@ bash 00_procesa.sh <variable>,<trimestre> [carpeta_entrada,carpeta_salida] [--vi
 
 | Argumento | Valores | Por defecto |
 |---|---|---|
-| `variable` | `pr` (precipitación) o `tas` (temperatura) | obligatorio |
+| `variable` | `pr` (precipitación), `tas` (temperatura media), `tasmax` (máxima) o `tasmin` (mínima) | obligatorio |
 | `trimestre` | `djf`, `mam`, `jja`, `son` o `ann` (anual); ver [Trimestres y anual](#trimestres-y-anual) | obligatorio |
 | `carpeta_entrada` | carpeta con una subcarpeta por trimestre (`djf/`, `jja/`, `ann/`, ...) | `data` |
 | `carpeta_salida` | carpeta para los `.nc` de resultados | `out` |
@@ -200,10 +208,10 @@ bash 00_procesa.sh tas,jja data,out --force
 bash 00_procesa.sh pr,djf --vi=std
 ```
 
-Para procesar las cuatro combinaciones:
+Para procesar todas las combinaciones de variable y trimestre:
 
 ```bash
-for v in pr tas; do for t in djf jja; do bash 00_procesa.sh $v,$t; done; done
+for v in pr tas tasmax tasmin; do for t in djf jja; do bash 00_procesa.sh $v,$t; done; done
 ```
 
 Antes de correr, el script revisa los argumentos y se detiene con un mensaje si la variable o el
@@ -290,11 +298,11 @@ figuras se vuelven a generar siempre (tardan pocos segundos).
   |---|---|---|---|
   | `pr` | `TOE_pr_<tri>_umbral_positivo_<vi>.png` | +1 | La precipitación **aumenta** por encima del ruido |
   | `pr` | `TOE_pr_<tri>_umbral_negativo_<vi>.png` | −1 | La precipitación **disminuye** por debajo del ruido |
-  | `tas` | `TOE_tas_<tri>_umbral_alto_<vi>.png` | +2 | Calentamiento de 2 veces el ruido |
-  | `tas` | `TOE_tas_<tri>_umbral_bajo_<vi>.png` | +1 | Calentamiento de 1 vez el ruido |
+  | `tas`, `tasmax`, `tasmin` | `TOE_<var>_<tri>_umbral_alto_<vi>.png` | +2 | Calentamiento de 2 veces el ruido |
+  | `tas`, `tasmax`, `tasmin` | `TOE_<var>_<tri>_umbral_bajo_<vi>.png` | +1 | Calentamiento de 1 vez el ruido |
 
   Los umbrales son una relación señal/ruido (`TOE = señal / √VI`), no grados ni porcentajes:
-  +2 para `tas` significa dos desviaciones estándar de la variabilidad interna, no +2 °C.
+  +2 para `tas` (o `tasmax`, `tasmin`) significa dos desviaciones estándar de la variabilidad interna, no +2 °C.
 - `Fraccion_incertidumbre_peru_<var>_<tri>_interpol_<vi>.png` — fracción de cada fuente de
   incertidumbre en el periodo de los resultados, promediada en el sur de Perú
   (17°S–12°S, 75°W–70°W)

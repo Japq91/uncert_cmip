@@ -25,15 +25,15 @@ args = [a for a in sys.argv[1:] if not a.startswith('--')]
 if len(args) < 2:
     print("Usage: python %s <variable> <season> [input_dir] [output_dir]" % sys.argv[0])
     sys.exit(1)
-var = args[0]       # Variable: 'pr' (precipitation) or 'tas' (temperature)
+var = args[0]       # Variable: 'pr' (precipitation), 'tas', 'tasmax' or 'tasmin' (temperature)
 tri = args[1]       # Season: 'djf', 'mam', 'jja', 'son', or 'ann' (annual)
 if len(args) > 2: idir = args[2]  # Input folder (optional)
 if len(args) > 3: odir = args[3]  # Output folder (optional)
 
 # SEASON TO FILE PREFIX
 pers = {'djf': 'm1', 'mam': 'm4', 'jja': 'm7', 'son': 'm10', 'ann': 'ann'}
-if var not in ('pr', 'tas') or tri not in pers:
-    print("ERROR: variable must be pr|tas and season djf|mam|jja|son|ann, got '%s %s'." % (var, tri))
+if var not in ('pr', 'tas', 'tasmax', 'tasmin') or tri not in pers:
+    print("ERROR: variable must be pr|tas|tasmax|tasmin and season djf|mam|jja|son|ann, got '%s %s'." % (var, tri))
     sys.exit(1)
 per = pers[tri]
 
@@ -91,6 +91,10 @@ ylim = (y_min - pad, y_max + pad)
 
 if var == 'pr':
     ylabel = 'Precipitación %s (mm)' % ('acumulada anual' if tri == 'ann' else 'acumulada')
+elif var == 'tasmax':
+    ylabel = 'Temperatura máxima (°C)'
+elif var == 'tasmin':
+    ylabel = 'Temperatura mínima (°C)'
 else:
     ylabel = 'Temperatura media (°C)'
 

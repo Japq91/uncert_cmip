@@ -1,10 +1,11 @@
 #!/bin/bash
 
 # =============================================================================
-# Script: setup_env.sh
+# Script: setup_env1.sh
+# Same as setup_env.sh, for servers with an old operating system.
 # Creates a virtual environment with uv and installs the packages.
-# Usage: bash setup_env.sh [venv_folder] [python_version]
-# Example: bash setup_env.sh .venv 3.11
+# Usage: bash setup_env1.sh [venv_folder] [python_version]
+# Example: bash setup_env1.sh .venv 3.11
 #
 # Only precompiled wheels are installed (--only-binary :all:), so nothing is
 # compiled from source. On servers with an old glibc/system libraries
@@ -57,7 +58,7 @@ if [ $? -ne 0 ]; then
     echo "ERROR installing packages."
     echo "No compatible precompiled versions were found for this system."
     echo "Options:"
-    echo "  1) Try another Python version:  rm -rf $VENV_DIR && bash setup_env.sh $VENV_DIR 3.10"
+    echo "  1) Try another Python version:  rm -rf $VENV_DIR && bash setup_env1.sh $VENV_DIR 3.10"
     echo "  2) Use conda-forge instead (brings its own PROJ/GDAL/HDF5):"
     echo "     conda create -n uncert_cmip -c conda-forge python=3.11 numpy 'pandas<3' xarray netcdf4 matplotlib geopandas"
     exit 1

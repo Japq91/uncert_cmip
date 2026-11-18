@@ -20,7 +20,7 @@ Las anomalías se calculan respecto al periodo de referencia **1981–2010** (co
 ```
 .
 ├── setup_env.sh        # Crea el entorno virtual e instala los paquetes
-├── setup_env1.sh       # Igual, solo con paquetes precompilados (servidores con sistema antiguo)
+├── setup_env1.sh       # Igual, para servidores con sistema antiguo (ver Instalación)
 ├── 00_procesa.sh       # Ejecuta el flujo completo (01 + 02 + 03)
 ├── 00_procesa_std.sh   # Mismo flujo con el método antiguo (VI como std, residuo en %)
 ├── 01_uncertainty.py   # Calcula SU, MU, VI y TOE  -> out/
@@ -166,12 +166,20 @@ cd uncert_cmip
 
 ### 3. Crear el entorno virtual
 
+Hay dos scripts. Crean el mismo entorno (`.venv/` con Python 3.11 y los paquetes `numpy`,
+`pandas<3`, `xarray`, `netCDF4`, `matplotlib` y `geopandas`); cambia solo cómo instalan los
+paquetes:
+
+| Script | Cuándo usarlo |
+|---|---|
+| `setup_env.sh` | **Por defecto.** Computadora o servidor con un sistema operativo actual. |
+| `setup_env1.sh` | Solo si `setup_env.sh` falla en un servidor con un sistema operativo antiguo (por ejemplo CentOS 7). |
+
+#### Opción normal: `setup_env.sh`
+
 ```bash
 bash setup_env.sh
 ```
-
-Esto crea la carpeta `.venv/` con Python 3.11 e instala `numpy`, `pandas<3`, `xarray`,
-`netCDF4`, `matplotlib` y `geopandas`.
 
 Opcionalmente puedes indicar otra carpeta y otra versión de Python:
 
@@ -179,14 +187,44 @@ Opcionalmente puedes indicar otra carpeta y otra versión de Python:
 bash setup_env.sh mi_entorno 3.12
 ```
 
-**Servidores con sistema antiguo** (por ejemplo CentOS 7, glibc viejo): si `setup_env.sh` falla
-al compilar `pyproj`, `netCDF4` u otro paquete, usa `setup_env1.sh`. Acepta los mismos argumentos,
-instala solo paquetes precompilados (no compila nada), elige las versiones más nuevas que tengan
-paquetes para ese sistema, muestra la versión de glibc y al final verifica que todo se pueda importar:
+#### Servidores con sistema antiguo: `setup_env1.sh`
+
+**El problema:** cuando `uv` no encuentra un paquete precompilado compatible con el sistema,
+intenta compilarlo desde el código fuente. En un servidor antiguo (glibc vieja) eso suele fallar
+con `pyproj` (lo usa `geopandas`) o con `netCDF4`, porque necesitan librerías del sistema (PROJ,
+HDF5) más nuevas que las instaladas. El error aparece mientras se instalan los paquetes y menciona
+la compilación (*building*, *build failed*) de alguno de ellos.
+
+**Qué hace distinto `setup_env1.sh`:**
+
+1. Instala **solo paquetes precompilados** (`--only-binary :all:`) y nunca compila. `uv` elige
+   las versiones más nuevas que tengan paquetes para ese sistema, aunque sean algo más antiguas.
+2. Muestra el sistema y la **versión de glibc** al empezar, para diagnosticar problemas.
+3. Al terminar, **comprueba que todos los paquetes se puedan importar** y muestra sus versiones.
+4. Si no encuentra paquetes compatibles, se detiene y sugiere qué hacer (ver abajo).
+
+Acepta los mismos argumentos que `setup_env.sh`. Si `setup_env.sh` ya creó un `.venv/` a medias,
+bórralo antes:
 
 ```bash
+rm -rf .venv
 bash setup_env1.sh
+bash setup_env1.sh mi_entorno 3.10   # otra carpeta y otra versión de Python
 ```
+
+**Si `setup_env1.sh` también falla**, tienes dos alternativas:
+
+- Probar con otra versión de Python: `rm -rf .venv && bash setup_env1.sh .venv 3.10`
+- Crear el entorno con conda-forge, que trae sus propias librerías PROJ, GDAL y HDF5 y no depende
+  de las del sistema:
+
+  ```bash
+  conda create -n uncert_cmip -c conda-forge python=3.11 numpy 'pandas<3' xarray netcdf4 matplotlib geopandas
+  conda activate uncert_cmip
+  ```
+
+  En ese caso, en el paso 4 activa el entorno con `conda activate uncert_cmip` en vez de
+  `source .venv/bin/activate`.
 
 ### 4. Activar el entorno
 

@@ -20,6 +20,7 @@ Las anomalías se calculan respecto al periodo de referencia **1981–2010** (co
 ```
 .
 ├── setup_env.sh        # Crea el entorno virtual e instala los paquetes
+├── setup_env1.sh       # Igual, solo con paquetes precompilados (servidores con sistema antiguo)
 ├── 00_procesa.sh       # Ejecuta el flujo completo (01 + 02 + 03)
 ├── 00_procesa_std.sh   # Mismo flujo con el método antiguo (VI como std, residuo en %)
 ├── 01_uncertainty.py   # Calcula SU, MU, VI y TOE  -> out/
@@ -176,6 +177,15 @@ Opcionalmente puedes indicar otra carpeta y otra versión de Python:
 
 ```bash
 bash setup_env.sh mi_entorno 3.12
+```
+
+**Servidores con sistema antiguo** (por ejemplo CentOS 7, glibc viejo): si `setup_env.sh` falla
+al compilar `pyproj`, `netCDF4` u otro paquete, usa `setup_env1.sh`. Acepta los mismos argumentos,
+instala solo paquetes precompilados (no compila nada), elige las versiones más nuevas que tengan
+paquetes para ese sistema, muestra la versión de glibc y al final verifica que todo se pueda importar:
+
+```bash
+bash setup_env1.sh
 ```
 
 ### 4. Activar el entorno

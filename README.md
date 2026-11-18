@@ -266,8 +266,8 @@ También se pueden correr sin `00_procesa.sh`. En ese caso las carpetas se pasan
 y 4; si no se pasan, se usan los valores de `idir` y `odir` al inicio de cada script:
 
 ```bash
-python 01_uncertainty.py <variable> <trimestre> [carpeta_entrada] [carpeta_salida] [--vi=std|var] [--force]
-python 02_grafica.py     <variable> <trimestre> [carpeta_resultados] [carpeta_figuras] [--vi=std|var]
+python 01_uncertainty.py <variable> <trimestre> [carpeta_entrada] [carpeta_salida] [--vi=std|var] [--resid=abs|pct] [--force]
+python 02_grafica.py     <variable> <trimestre> [carpeta_resultados] [carpeta_figuras] [--vi=std|var] [--resid=abs|pct]
 ```
 
 Por ejemplo:
@@ -278,8 +278,25 @@ python 02_grafica.py pr djf resultados figures
 ```
 
 Si `01_uncertainty.py` guardó en otra carpeta que `out/`, hay que indicársela a `02_grafica.py`;
-si no, la buscará en `out/` y avisará que no encuentra los archivos. Al correrlos por separado no
-se hacen las validaciones de `00_procesa.sh`.
+si no, la buscará en `out/` y avisará que no encuentra los archivos. Lo mismo con `--vi` y
+`--resid`: `02_grafica.py` debe recibir los mismos valores que `01_uncertainty.py` para encontrar
+los archivos. Al correrlos por separado no se hacen las validaciones de `00_procesa.sh`.
+
+### Notebook `Clase.ipynb`
+
+Hace el mismo cálculo que `01_uncertainty.py` y `02_grafica.py`, paso a paso, para la clase. Las
+opciones van en la primera celda de código:
+
+| Variable | Valores | Equivale a |
+|---|---|---|
+| `var`, `tri` | igual que en los scripts | `<variable>,<trimestre>` |
+| `idir`, `odir`, `fdir` | carpetas de datos, resultados y figuras | `carpeta_entrada,carpeta_salida` y `figures/` |
+| `vi_stat` | `'var'` (recomendado) o `'std'` | `--vi` |
+| `resid` | `'abs'` (recomendado) o `'pct'` | `--resid` |
+
+Con `vi_stat = 'std'` y `resid = 'pct'` reproduce `00_procesa_std.sh`. Los resultados, las figuras
+y sus nombres son los mismos que los de los scripts, así que el notebook puede leer o pisar
+archivos hechos por ellos.
 
 ### Series de tiempo de los modelos
 
@@ -336,6 +353,20 @@ figuras se vuelven a generar siempre (tardan pocos segundos).
   umbral +1 suele marcar el primer año de los resultados en casi todo el mapa; el +3 da más
   contraste entre regiones. Un píxel con el primer año (por ejemplo 2020) significa "ese año o
   antes": la señal ya emergió al inicio del periodo de resultados.
+
+  **Escala de colores:** discreta, de 21 colores, abierta en las dos puntas (triángulos en la barra).
+  Cada color agrupa varios años: con resultados 2020-2100 son 4 años por color, con bordes en
+  2024, 2028, ..., 2100. El periodo se reparte igual si es más corto (por ejemplo 2020-2064 da 2
+  años por color).
+
+  | Parte de la barra | Significado (resultados 2020-2100) |
+  |---|---|
+  | Triángulo inferior | Emerge antes de 2024, incluido "ya emergió en 2020 o antes" |
+  | Colores intermedios (19) | Emerge en ese bloque de 4 años, por ejemplo 2024-2027 |
+  | Triángulo superior | Emerge en 2100 |
+  | Blanco | No emerge dentro del periodo de resultados |
+
+  El número de colores se cambia en `n_colores` en `02_grafica.py` (y en el notebook).
 - `Fraccion_incertidumbre_peru_<var>_<tri>_interpol_<vi>.png` — fracción de cada fuente de
   incertidumbre en el periodo de los resultados, promediada en el sur de Perú
   (17°S–12°S, 75°W–70°W)

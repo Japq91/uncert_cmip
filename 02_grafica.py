@@ -97,13 +97,25 @@ y_ini = int(TOE['time.year'][0])
 y_end = int(TOE['time.year'][-1])
 print("Results period: %d-%d" % (y_ini, y_end))
 
-# One color per year: each year goes from y to y+1
-levels = list(range(y_ini, y_end + 2))
-# Year labels every 10 years, always showing y_ini and y_end
+# Year labels every 10 years, always showing y_ini and y_end (uncertainty fraction plot)
 year_ticks = list(range(y_ini, y_end - 4, 10)) + [y_end]
-# Colorbar: 75% of the panel height, labels in the middle of each year color
+
+# DISCRETE COLOR SCALE FOR THE TOE MAPS
+# n_colores colors, open at both ends (triangles):
+#   lower triangle: before the first edge (includes "already emerged at y_ini")
+#   upper triangle: from the last edge on
+#   n_colores - 2 colors in between, paso years each
+# Example 2020-2100: paso = 4 years, edges 2024, 2028, ..., 2100
+n_colores = 21
+paso = max(1, int(round((y_end + 1 - y_ini) / n_colores)))  # Years per color
+levels = list(range(y_ini + paso, y_end + 1, paso))[:n_colores - 1]  # Color edges
+if len(levels) < 2:  # Very short period: one color per year
+    levels = list(range(y_ini, y_end + 2))
+print("TOE color scale: %d colors, %d years each, edges %d-%d"
+      % (len(levels) + 1, paso, levels[0], levels[-1]))
+# Colorbar: 75% of the panel height, label every second edge
 cbar_kw = {'label': 'Year', 'shrink': 0.75,
-           'ticks': [t + 0.5 for t in year_ticks], 'format': lambda x, pos: '%d' % x}
+           'ticks': levels[::2], 'format': lambda x, pos: '%d' % x}
 
 t_TOE = TOE * np.nan  # Start with NaN
 tpr = y_ini
@@ -138,7 +150,7 @@ def anio_umbral(umbr):
 for umbr, name, title in umbrales:
     TOE_u = anio_umbral(umbr)
     fig, ax = plt.subplots(figsize=(6, 8))
-    TOE_u.plot(ax=ax, levels=levels, cmap='turbo', cbar_kwargs=cbar_kw)
+    TOE_u.plot(ax=ax, levels=levels, cmap='turbo', extend='both', cbar_kwargs=cbar_kw)
     ax.set_xlim(-83, -67)     # Longitude
     ax.set_ylim(-19, 0.5)     # Latitude
     # --- SHAPEFILES ---

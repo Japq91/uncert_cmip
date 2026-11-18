@@ -21,6 +21,7 @@ Las anomalías se calculan respecto al periodo de referencia **1981–2010** (co
 .
 ├── setup_env.sh        # Crea el entorno virtual e instala los paquetes
 ├── 00_procesa.sh       # Ejecuta el flujo completo (01 + 02 + 03)
+├── 00_procesa_std.sh   # Mismo flujo con el método antiguo (VI como std, residuo en %)
 ├── 01_uncertainty.py   # Calcula SU, MU, VI y TOE  -> out/
 ├── 02_grafica.py       # Genera mapas y gráficos     -> figures/
 ├── 03_series_modelos.py # Series de tiempo de cada modelo -> figures/
@@ -118,6 +119,31 @@ carpeta sin pisarse, y los títulos de las figuras indican cuál se usó (`VI: s
 Las figuras usan el periodo de los resultados en el título, en la barra de colores de los mapas y
 en el eje horizontal del gráfico de fracciones.
 
+### Método antiguo: `00_procesa_std.sh`
+
+`00_procesa_std.sh` corre el mismo flujo con el método usado antes de octubre de 2026, para
+reproducir y comparar resultados anteriores:
+
+- variabilidad interna como **desviación estándar** (`--vi=std`);
+- residuo de temperatura (`tas`, `tasmax`, `tasmin`) en **porcentaje** respecto al polinomio
+  (`--resid=pct`). `pr` usa siempre el residuo en porcentaje.
+
+```bash
+bash 00_procesa_std.sh <variable>,<trimestre> [carpeta_entrada,carpeta_salida] [--force]
+bash 00_procesa_std.sh tas,jja
+```
+
+Es lo mismo que `bash 00_procesa.sh <variable>,<trimestre> --vi=std --resid=pct`; el método queda
+fijo y no acepta `--vi` ni `--resid`. Los resultados y figuras de temperatura terminan en
+`_std_pct` y los de `pr` en `_std`, así que no pisan los de `00_procesa.sh`. Los títulos indican
+`VI: std, residuo %`.
+
+Este método da años de emergencia más tardíos para la temperatura (por ejemplo `tas` JJA, mediana
+del dominio: +1 en 2048 y +2 en 2077, frente a 2020 y 2032 con el método actual), pero mezcla
+unidades: la señal está en °C y el ruido en % de la temperatura, así que el TOE depende de cuán
+cálido es el lugar. Donde la temperatura está cerca de 0 °C (Andes, sobre todo con `tasmin`) el
+ruido se infla y la señal no emerge nunca. Se recomienda `00_procesa.sh`.
+
 ## Instalación
 
 ### 1. Instalar `uv` (solo una vez)
@@ -168,7 +194,7 @@ Sabrás que está activo porque el prompt mostrará `(.venv)` al inicio. Para sa
 Con el entorno activado:
 
 ```bash
-bash 00_procesa.sh <variable>,<trimestre> [carpeta_entrada,carpeta_salida] [--vi=std|var] [--force]
+bash 00_procesa.sh <variable>,<trimestre> [carpeta_entrada,carpeta_salida] [--vi=std|var] [--resid=abs|pct] [--force]
 ```
 
 | Argumento | Valores | Por defecto |
@@ -178,9 +204,10 @@ bash 00_procesa.sh <variable>,<trimestre> [carpeta_entrada,carpeta_salida] [--vi
 | `carpeta_entrada` | carpeta con una subcarpeta por trimestre (`djf/`, `jja/`, `ann/`, ...) | `data` |
 | `carpeta_salida` | carpeta para los `.nc` de resultados | `out` |
 | `--vi` | variabilidad interna como varianza (`var`) o desviación estándar (`std`); ver [más abajo](#variabilidad-interna-desviación-estándar-o-varianza) | `var` |
+| `--resid` | residuo de temperatura en grados (`abs`) o en porcentaje (`pct`, método antiguo; ver [`00_procesa_std.sh`](#método-antiguo-00_procesa_stdsh)). No afecta a `pr` | `abs` |
 | `--force` | recalcula aunque los `.nc` de resultados ya existan | desactivado |
 
-Las opciones `--vi` y `--force` pueden ir en cualquier posición.
+Las opciones `--vi`, `--resid` y `--force` pueden ir en cualquier posición.
 
 Las figuras se guardan siempre en `figures/`. Los valores van separados por comas y **sin espacios**
 (`pr,djf`, no `pr, djf`).
@@ -288,21 +315,27 @@ figuras se vuelven a generar siempre (tardan pocos segundos).
 - `Tsu_<var>_<per>_<vi>.nc` — incertidumbre por escenarios (SU)
 - `Tvi_<var>_<per>_<vi>.nc` — variabilidad interna (VI)
 
-`<vi>` es `std` o `var` según la opción `--vi`. `<per>` es el prefijo del trimestre: `m1` (djf), `m4` (mam), `m7` (jja), `m10` (son) o `ann` (anual).
+`<vi>` es `std` o `var` según la opción `--vi`; para temperatura con `--resid=pct` (o
+`00_procesa_std.sh`) se agrega `_pct` (`std_pct`, `var_pct`). `<per>` es el prefijo del trimestre: `m1` (djf), `m4` (mam), `m7` (jja), `m10` (son) o `ann` (anual).
 
 **`figures/`** (PNG):
 
-- Mapas del TOE (año en que la señal emerge), dos por variable:
+- Mapas del TOE (año en que la señal emerge), dos para `pr` y tres para temperatura:
 
   | Variable | Archivo | Umbral | Significado |
   |---|---|---|---|
   | `pr` | `TOE_pr_<tri>_umbral_positivo_<vi>.png` | +1 | La precipitación **aumenta** por encima del ruido |
   | `pr` | `TOE_pr_<tri>_umbral_negativo_<vi>.png` | −1 | La precipitación **disminuye** por debajo del ruido |
-  | `tas`, `tasmax`, `tasmin` | `TOE_<var>_<tri>_umbral_alto_<vi>.png` | +2 | Calentamiento de 2 veces el ruido |
   | `tas`, `tasmax`, `tasmin` | `TOE_<var>_<tri>_umbral_bajo_<vi>.png` | +1 | Calentamiento de 1 vez el ruido |
+  | `tas`, `tasmax`, `tasmin` | `TOE_<var>_<tri>_umbral_alto_<vi>.png` | +2 | Calentamiento de 2 veces el ruido |
+  | `tas`, `tasmax`, `tasmin` | `TOE_<var>_<tri>_umbral_muy_alto_<vi>.png` | +3 | Calentamiento de 3 veces el ruido |
 
   Los umbrales son una relación señal/ruido (`TOE = señal / √VI`), no grados ni porcentajes:
   +2 para `tas` (o `tasmax`, `tasmin`) significa dos desviaciones estándar de la variabilidad interna, no +2 °C.
+  En los trópicos la temperatura emerge pronto (la variabilidad interanual es pequeña), así que el
+  umbral +1 suele marcar el primer año de los resultados en casi todo el mapa; el +3 da más
+  contraste entre regiones. Un píxel con el primer año (por ejemplo 2020) significa "ese año o
+  antes": la señal ya emergió al inicio del periodo de resultados.
 - `Fraccion_incertidumbre_peru_<var>_<tri>_interpol_<vi>.png` — fracción de cada fuente de
   incertidumbre en el periodo de los resultados, promediada en el sur de Perú
   (17°S–12°S, 75°W–70°W)

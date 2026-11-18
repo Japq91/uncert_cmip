@@ -12,13 +12,15 @@
 FDIR="figures"  # Figures folder (.png)
 
 usage() {
-    echo "Usage: bash $0 <variable>,<season> [input_dir,output_dir] [--vi=std|var] [--force]"
+    echo "Usage: bash $0 <variable>,<season> [input_dir,output_dir] [--vi=std|var] [--resid=abs|pct] [--force]"
     echo "  variable     pr | tas | tasmax | tasmin"
     echo "  season       djf | mam | jja | son | ann (annual)"
     echo "  input_dir    folder with <season>/ subfolders   (optional, default: data)"
     echo "  output_dir   folder for the .nc results          (optional, default: out)"
     echo "  --vi=var     internal variability as variance (default)"
     echo "  --vi=std     internal variability as standard deviation (old method)"
+    echo "  --resid=abs  temperature residual in degrees (default)"
+    echo "  --resid=pct  temperature residual in percent (old method; see 00_procesa_std.sh)"
     echo "  --force      recalculate even if the .nc results already exist"
     echo "Example: bash $0 tas,jja"
     echo "Example: bash $0 tasmin,jja"
@@ -29,15 +31,18 @@ usage() {
     echo "Example: bash $0 pr,djf --vi=std"
 }
 
-# --- Read options --force and --vi (they can go anywhere) ---
+# --- Read options --force, --vi and --resid (they can go anywhere) ---
 FORCE=""
 VI="var"
+RESID="abs"
 ARGS=()
 for a in "$@"; do
     if [ "$a" = "--force" ]; then
         FORCE="--force"
     elif [[ "$a" == --vi=* ]]; then
         VI="${a#--vi=}"
+    elif [[ "$a" == --resid=* ]]; then
+        RESID="${a#--resid=}"
     elif [[ "$a" == -* ]]; then
         echo "ERROR: Unknown option '$a'."
         usage
@@ -75,6 +80,11 @@ ODIR="${ODIR:-out}"   # Output folder (.nc)
 case "$VI" in
     std|var) ;;
     *) echo "ERROR: --vi must be 'std' or 'var', got '$VI'."; usage; exit 1 ;;
+esac
+
+case "$RESID" in
+    abs|pct) ;;
+    *) echo "ERROR: --resid must be 'abs' or 'pct', got '$RESID'."; usage; exit 1 ;;
 esac
 
 case "$VAR" in
@@ -134,19 +144,19 @@ for script in 01_uncertainty.py 02_grafica.py 03_series_modelos.py; do
 done
 
 # --- Run the pipeline ---
-echo "Variable: $VAR | Season: $TRI | VI: $VI${FORCE:+ | --force}"
+echo "Variable: $VAR | Season: $TRI | VI: $VI | Residual: $RESID${FORCE:+ | --force}"
 echo "Input: $IDIR/$TRI ($NFILES files) | Output: $ODIR | Figures: $FDIR"
 echo "----------------------------------------"
 
 echo "[1/3] Running 01_uncertainty.py..."
-python 01_uncertainty.py "$VAR" "$TRI" "$IDIR" "$ODIR" --vi="$VI" $FORCE
+python 01_uncertainty.py "$VAR" "$TRI" "$IDIR" "$ODIR" --vi="$VI" --resid="$RESID" $FORCE
 if [ $? -ne 0 ]; then
     echo "ERROR in 01_uncertainty.py"
     exit 1
 fi
 
 echo "[2/3] Running 02_grafica.py..."
-python 02_grafica.py "$VAR" "$TRI" "$ODIR" "$FDIR" --vi="$VI"
+python 02_grafica.py "$VAR" "$TRI" "$ODIR" "$FDIR" --vi="$VI" --resid="$RESID"
 if [ $? -ne 0 ]; then
     echo "ERROR in 02_grafica.py"
     exit 1

@@ -14,6 +14,14 @@ fut_ini = 2020                  # First year of the results (if the data allows 
 # Output files end in _var.nc or _std.nc
 vi_stat = 'var'
 # ============================
+# RESIDUAL OF TEMPERATURE (tas, tasmax, tasmin) (default; can also be given as --resid=abs or --resid=pct)
+# 'abs': data - polynomial, in degrees (recommended). Signal and VI in the same units.
+# 'pct': percent difference from the polynomial (old method, kept to reproduce old results).
+#        Fails where temperature is near 0 degC (tasmin in the Andes).
+# Precipitation always uses the percent residual.
+# Temperature with 'pct': output files end in _<vi>_pct.nc
+resid = 'abs'
+# ============================
 
 import pandas as pd
 import xarray as xr
@@ -31,6 +39,7 @@ force = '--force' in sys.argv
 # --vi=std or --vi=var: how to measure internal variability
 for a in sys.argv[1:]:
     if a.startswith('--vi='): vi_stat = a.split('=', 1)[1]
+    if a.startswith('--resid='): resid = a.split('=', 1)[1]
 args = [a for a in sys.argv[1:] if not a.startswith('--')]
 var = args[0]       # Variable: 'pr' (precipitation), 'tas', 'tasmax' or 'tasmin' (temperature)
 tri = args[1]  # Season: 'djf', 'mam', 'jja', 'son', or 'ann' (annual)
@@ -60,6 +69,15 @@ if vi_stat not in ('std', 'var'):
     print("ERROR: vi_stat must be 'std' or 'var', got '%s'." % vi_stat)
     sys.exit(1)
 print("Internal variability (VI) as: %s" % vi_stat)
+if resid not in ('abs', 'pct'):
+    print("ERROR: resid must be 'abs' or 'pct', got '%s'." % resid)
+    sys.exit(1)
+# Percent residual for temperature only with --resid=pct (precipitation always uses it)
+resid_pct = (not es_temp) or resid == 'pct'
+# Tag of the output files: _var, _std, or _var_pct / _std_pct (temperature with --resid=pct)
+tag = vi_stat + ('_pct' if es_temp and resid == 'pct' else '')
+if es_temp:
+    print("Temperature residual as: %s" % ('percent (old method)' if resid_pct else 'degrees'))
 print("Output folder: %s" % os.path.abspath(odir))
 
 # FUNCTIONS #########################
@@ -69,9 +87,9 @@ def polinom(d, var):
     Fit a degree 4 polynomial to the time series and return:
     - delta: anomaly from the reference period (ref_ini-ref_end)
     - residuo: difference between the data and the polynomial
-    Temperature (tas, tasmax, tasmin): both in degrees (absolute difference).
-      A percent residual is not used: tasmin can be near or below 0 degC
-      (Andes in winter) and the division by the polynomial would blow up.
+    Temperature (tas, tasmax, tasmin): delta in degrees. Residual in degrees
+      (default) or in percent with --resid=pct (old method). The percent residual
+      fails where tasmin is near or below 0 degC (Andes in winter).
     Precipitation (pr): both in percent.
     """
     # Polynomial coefficients (degree 4)
@@ -80,14 +98,16 @@ def polinom(d, var):
     s_poli = xr.polyval(coord=d.time, coeffs=coef['%s_polyfit_coefficients' % var])
     # Mean of the reference period
     prom_PR = s_poli.sel(time=slice(str(ref_ini), str(ref_end))).mean(dim='time')
-    if es_temp:
-        # Temperature: absolute differences (degrees)
-        residuo0 = d[var] - s_poli          # Residual = e(t)
-        delta0 = s_poli - prom_PR           # Delta: anomaly from the reference period
+    # Residual = e(t)
+    if resid_pct:
+        residuo0 = ((d[var] / s_poli) * 100) - 100   # Percent
     else:
-        # Precipitation: percent differences
-        residuo0 = ((d[var] / s_poli) * 100) - 100
-        delta0 = ((s_poli / prom_PR) * 100) - 100
+        residuo0 = d[var] - s_poli                   # Degrees
+    # Delta: anomaly from the reference period
+    if es_temp:
+        delta0 = s_poli - prom_PR                    # Temperature: degrees
+    else:
+        delta0 = ((s_poli / prom_PR) * 100) - 100    # Precipitation: percent
     return delta0, residuo0
 
 # CHECK EXISTING OUTPUT FILES #########################
@@ -95,10 +115,10 @@ def polinom(d, var):
 os.makedirs(odir, exist_ok=True)
 
 archivos_salida = [
-    os.path.join(odir, 'toe_%s_%s_%s.nc' % (var, per, vi_stat)),
-    os.path.join(odir, 'Tmu_%s_%s_%s.nc' % (var, per, vi_stat)),
-    os.path.join(odir, 'Tsu_%s_%s_%s.nc' % (var, per, vi_stat)),
-    os.path.join(odir, 'Tvi_%s_%s_%s.nc' % (var, per, vi_stat))
+    os.path.join(odir, 'toe_%s_%s_%s.nc' % (var, per, tag)),
+    os.path.join(odir, 'Tmu_%s_%s_%s.nc' % (var, per, tag)),
+    os.path.join(odir, 'Tsu_%s_%s_%s.nc' % (var, per, tag)),
+    os.path.join(odir, 'Tvi_%s_%s_%s.nc' % (var, per, tag))
 ]
 
 todos_existentes = all(os.path.exists(f) for f in archivos_salida)
@@ -299,8 +319,8 @@ TOE = G / (VI) ** 0.5
 
 # Save results as NetCDF files
 print("Saving output files...")
-TOE.to_netcdf(os.path.join(odir, 'toe_%s_%s_%s.nc' % (var, per, vi_stat)))
-MU.to_netcdf(os.path.join(odir, 'Tmu_%s_%s_%s.nc' % (var, per, vi_stat)))
-SU.to_netcdf(os.path.join(odir, 'Tsu_%s_%s_%s.nc' % (var, per, vi_stat)))
-VI.to_netcdf(os.path.join(odir, 'Tvi_%s_%s_%s.nc' % (var, per, vi_stat)))
+TOE.to_netcdf(os.path.join(odir, 'toe_%s_%s_%s.nc' % (var, per, tag)))
+MU.to_netcdf(os.path.join(odir, 'Tmu_%s_%s_%s.nc' % (var, per, tag)))
+SU.to_netcdf(os.path.join(odir, 'Tsu_%s_%s_%s.nc' % (var, per, tag)))
+VI.to_netcdf(os.path.join(odir, 'Tvi_%s_%s_%s.nc' % (var, per, tag)))
 print("Calculation finished. Results: %d-%d" % (a_ini, y_stop))
